@@ -1,0 +1,21 @@
+-- Migration 0004: Processing jobs claim pattern comment
+-- Build-order step 7 (already created in 0001, this adds the claim pattern documentation)
+--
+-- The processing_jobs table is created in 0001_init_schema.sql.
+-- This migration exists as a placeholder per the repo structure spec.
+-- The claim pattern is documented here for reference:
+--
+-- SELECT * FROM processing_jobs
+--   WHERE status = 'pending'
+--   ORDER BY created_at
+--   LIMIT 1
+--   FOR UPDATE SKIP LOCKED;
+--
+-- This pattern gives correct queue semantics:
+--   - FOR UPDATE: locks the row so no other worker can claim it
+--   - SKIP LOCKED: if a row is already locked, skip to the next one
+--   - ORDER BY created_at: FIFO ordering
+--   - LIMIT 1: claim one job at a time
+
+-- No-op migration — table and indexes already created in 0001/0002
+SELECT 1;
