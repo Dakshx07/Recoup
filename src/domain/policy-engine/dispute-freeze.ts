@@ -115,7 +115,7 @@ export function resolveDispute(input: DisputeResolutionInput): DisputeResolution
     return {
       commitmentAction: 'UNFREEZE',
       caseAction: 'RESUME_COMMITMENT',
-      reason: `Dispute rejected — commitment un-frozen, resuming toward original due date (${input.originalPromisedDate.toISOString().split('T')[0]})`,
+      reason: `Dispute rejected — commitment un-frozen, resuming toward original due date (${formatDate(input.originalPromisedDate)})`,
     };
   }
 
@@ -125,4 +125,16 @@ export function resolveDispute(input: DisputeResolutionInput): DisputeResolution
     caseAction: 'REOPEN',
     reason: 'Dispute upheld — commitment voided (VOIDED_BY_DISPUTE), case reopened for renegotiation or write-off',
   };
+}
+
+/**
+ * Format a Date as YYYY-MM-DD preserving the local date (not UTC).
+ * Why not toISOString().split('T')[0]: that converts to UTC first,
+ * which shifts dates across midnight for IST (+05:30).
+ */
+function formatDate(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
