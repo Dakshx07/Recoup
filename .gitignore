@@ -34,6 +34,7 @@ Thumbs.db
 
 # Supabase
 .supabase/
+supabase/.temp/
 
 # Test coverage
 coverage/

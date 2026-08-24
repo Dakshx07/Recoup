@@ -19,8 +19,8 @@ A living document tracking every build step, decision, open issue, and maintenan
 | 08 | LLM integration (Gemini) | ✅ Done | 2026-08-24 | 2026-08-24 | Parser and drafter, zero write permission |
 | 09 | Payment Link + webhook | ✅ Done | 2026-08-24 | 2026-08-24 | Webhook ingestion and idempotency via DB constraints |
 | 10 | Audit logging | ✅ Done | 2026-08-24 | 2026-08-24 | Wired into every transition |
-| 11 | Scheduled checks (sim clock) | ⬜ Pending | — | — | — |
-| 12 | Evaluation harness | ⬜ Pending | — | — | 70/30 split, held-out set |
+| 11 | Scheduled checks (sim clock) | ✅ Done | 2026-08-24 | 2026-08-24 | Time-based rule triggers, simulated-clock support |
+| 12 | Evaluation harness | ✅ Done | 2026-08-24 | 2026-08-24 | 70/30 split, held-out set; E2E simulation |
 | 13 | Supabase Auth + dashboard gate | ⬜ Pending | — | — | Single reviewer |
 | 14 | Dashboard (4 screens) | ⬜ Pending | — | — | SHOULD BUILD |
 | 15 | Reconciliation job | ⬜ Pending | — | — | SHOULD BUILD |
