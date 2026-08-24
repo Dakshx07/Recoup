@@ -1,0 +1,7 @@
+[project]
+id = "recoup"
+name = "Recoup"
+
+[api]
+enabled = true
+port = 54321
