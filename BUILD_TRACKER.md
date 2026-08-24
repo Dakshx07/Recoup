@@ -9,16 +9,16 @@ A living document tracking every build step, decision, open issue, and maintenan
 | # | Step | Status | Date Started | Date Completed | Notes |
 |---|---|---|---|---|---|
 | 00 | Project scaffold & conventions | ✅ Done | 2026-08-24 | 2026-08-24 | CONVENTIONS.md, docs stubs, README, .env.example |
-| 01 | Schema migration (12 tables) | 🔄 In Progress | 2026-08-24 | — | — |
-| 02 | RLS policies | ⬜ Pending | — | — | Must follow immediately after step 1 |
-| 03 | Clock abstraction (LIVE/DEMO) | ⬜ Pending | — | — | — |
-| 04 | Synthetic data generator | ⬜ Pending | — | — | Dispute edge case first |
-| 05 | State-transition service | ⬜ Pending | — | — | Sole write path, row-lock concurrency |
-| 06 | Policy Engine core rules | ⬜ Pending | — | — | All thresholds as named config constants |
-| 07 | Processing jobs + worker | ⬜ Pending | — | — | — |
-| 08 | LLM reply-parsing (Gemini) | ⬜ Pending | — | — | Schema-validated, zero write permission |
-| 09 | Payment Link + webhook | ⬜ Pending | — | — | Mock + idempotency |
-| 10 | Audit logging | ⬜ Pending | — | — | Wired into every transition |
+| 01 | Schema migration (12 tables) | ✅ Done | 2026-08-24 | 2026-08-24 | — |
+| 02 | RLS policies | ✅ Done | 2026-08-24 | 2026-08-24 | Applied immediately |
+| 03 | Clock abstraction (LIVE/DEMO) | ✅ Done | 2026-08-24 | 2026-08-24 | — |
+| 04 | Synthetic data generator | ✅ Done | 2026-08-24 | 2026-08-24 | Generates 200 invoices across 8 scenarios |
+| 05 | State-transition service | ✅ Done | 2026-08-24 | 2026-08-24 | Sole write path, row-lock concurrency |
+| 06 | Policy Engine core rules | ✅ Done | 2026-08-24 | 2026-08-24 | All thresholds as named config constants |
+| 07 | Processing jobs + worker | ✅ Done | 2026-08-24 | 2026-08-24 | SELECT FOR UPDATE SKIP LOCKED implementation |
+| 08 | LLM integration (Gemini) | ✅ Done | 2026-08-24 | 2026-08-24 | Parser and drafter, zero write permission |
+| 09 | Payment Link + webhook | ✅ Done | 2026-08-24 | 2026-08-24 | Webhook ingestion and idempotency via DB constraints |
+| 10 | Audit logging | ✅ Done | 2026-08-24 | 2026-08-24 | Wired into every transition |
 | 11 | Scheduled checks (sim clock) | ⬜ Pending | — | — | — |
 | 12 | Evaluation harness | ⬜ Pending | — | — | 70/30 split, held-out set |
 | 13 | Supabase Auth + dashboard gate | ⬜ Pending | — | — | Single reviewer |
@@ -34,13 +34,13 @@ A living document tracking every build step, decision, open issue, and maintenan
 
 | # | ADR | Written At Step | Date |
 |---|---|---|---|
-| 0001 | Two-tier state machine | — | — |
-| 0002 | LLM zero write permission | — | — |
-| 0003 | Supabase PostgreSQL as sole datastore | — | — |
-| 0004 | Postgres-table queue over Redis/Kafka | — | — |
-| 0005 | Simulated clock abstraction | — | — |
-| 0006 | Dispute-freeze-not-cancel rule | — | — |
-| 0007 | RLS lockdown + service-role writes | — | — |
+| 0001 | Two-tier state machine | 05 | 2026-08-24 |
+| 0002 | LLM zero write permission | 08 | 2026-08-24 |
+| 0003 | Supabase PostgreSQL as sole datastore | 01 | 2026-08-24 |
+| 0004 | Postgres-table queue over Redis/Kafka | 07 | 2026-08-24 |
+| 0005 | Simulated clock abstraction | 03 | 2026-08-24 |
+| 0006 | Dispute-freeze-not-cancel rule | 06 | 2026-08-24 |
+| 0007 | RLS lockdown + service-role writes | 02 | 2026-08-24 |
 
 ---
 
