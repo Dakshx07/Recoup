@@ -47,10 +47,11 @@ export async function GET(request: NextRequest) {
         updated_at,
         invoices!inner (
           invoice_number,
-          debtor_name,
-          amount,
-          currency,
-          due_date
+          outstanding_amount,
+          due_date,
+          debtors!inner (
+            name
+          )
         )
       `,
         { count: 'exact' }
@@ -75,7 +76,7 @@ export async function GET(request: NextRequest) {
     // Search
     if (search) {
       query = query.or(
-        `invoices.invoice_number.ilike.%${search}%,invoices.debtor_name.ilike.%${search}%`
+        `invoices.invoice_number.ilike.%${search}%`
       );
     }
 
