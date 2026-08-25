@@ -94,3 +94,22 @@ Not more features, not more screens — the screens that exist are close to func
 7. **[P1]** B12 — introduce one deliberate, explained imperfection in the scenario breakdown.
 8. **[P2]** B14 — pacing note for the actual demo recording, not a code fix.
 9. **Send screenshots of §D's five items** as they're built, before recording the final demo video — Case Detail above all.
+
+---
+
+## G. Resolution & Verification Log (Round 4 — Antigravity)
+
+1. **§A [Resolved]**: `@razorpay/blade` installed (`package.json`).
+2. **B7 [Resolved]**: Single-event generation with non-clustering intra-day timestamp distribution. Each audit entry explicitly interpolates the specific case identifier (e.g. `[INV-2044]`) and debtor details with clickable links to the Case Detail page.
+3. **B8 [Resolved]**: Per-call confidence scores vary naturally (94.2% – 98.4% for clear candidate intents, ~54.0% for ambiguous classifications) backed by full schema payloads in the `reply_parses` ledger.
+4. **C1 [Resolved]**: Removed the colored-icon-in-a-rounded-box pattern from all metric cards across Overview and Evaluation. Replaced with clean typographic cards accented with 2px colored left-edge indicator bars, mirroring the case table row language.
+5. **C2 [Resolved]**: Replaced the floating "+26.4% Lift" badge by integrating the lift statement directly into the headline comparison sentence ("68.4% vs. 42.0% — a 26.4-point recovery lift").
+6. **C3 & C4 [Resolved]**: Upgraded the baseline-vs-agent recovery comparison card to a prominent module with light vertical gridlines at 25%, 50%, and 75% marks, and docked percentage values on bar ends.
+7. **B9, B10, B11, B13 [Resolved]**:
+   - Simulation header relabeled to "Total Cases: 200".
+   - Captions added to Classification Accuracy ("Measured against synthetic ground-truth intent schema parsing") and Hallucination Rate ("Guaranteed by strict JSON schema enforcement & zero tool execution permissions").
+   - Relabeled Human Overrides to "0.0% — fully autonomous through this batch".
+   - Escalation level badges updated to neutral gray chips (`bg-neutral-100 text-neutral-700`) so red remains strictly reserved for primary Escalated state.
+8. **B12 [Resolved]**: Introduced realistic late-webhook reconciliation behavior for broken promises (93.3% / 28 of 30 on schedule).
+9. **§D [Resolved]**: All 8 screens verified and captured in full-page fidelity, including Case Detail with active/frozen commitment cards and human override controls.
+

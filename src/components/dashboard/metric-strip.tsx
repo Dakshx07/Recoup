@@ -1,69 +1,53 @@
 /**
- * Metric strip — 4-metric card row reused across Overview and Case Queue.
+ * Metric strip — 4-metric card row per 06_UI_UX_DESIGN.md and 07_REVIEW_NOTES.md §C1.
  *
- * Color semantics per UI spec §9:
- * - Green: recovered/success
- * - Amber: warning/at-risk
- * - Blue: active/informational
- * - Red: escalated/error
+ * Design decision per C1:
+ * No colored-icon-in-a-rounded-box (the AI-dashboard giveaway).
+ * Clean typographic cards with a subtle 2px left-edge indicator bar that
+ * reuses the exact visual language of the table's escalated left-edge line.
  */
-
-import { TrendingUp, AlertTriangle, Activity, ArrowUpRight } from 'lucide-react';
 
 interface MetricCardProps {
   label: string;
   value: string;
   subtext?: string;
-  icon: React.ReactNode;
   color: 'green' | 'red' | 'amber' | 'blue' | 'neutral';
 }
 
 const COLOR_MAP = {
   green: {
-    bg: 'bg-green-50',
-    icon: 'text-green-600',
-    value: 'text-green-900',
+    border: 'border-l-green-600',
+    value: 'text-neutral-900',
   },
   red: {
-    bg: 'bg-red-50',
-    icon: 'text-red-600',
-    value: 'text-red-900',
+    border: 'border-l-red-600',
+    value: 'text-neutral-900',
   },
   amber: {
-    bg: 'bg-amber-50',
-    icon: 'text-amber-600',
-    value: 'text-amber-900',
+    border: 'border-l-amber-500',
+    value: 'text-neutral-900',
   },
   blue: {
-    bg: 'bg-blue-50',
-    icon: 'text-blue-600',
-    value: 'text-blue-900',
+    border: 'border-l-blue-600',
+    value: 'text-neutral-900',
   },
   neutral: {
-    bg: 'bg-neutral-50',
-    icon: 'text-neutral-600',
+    border: 'border-l-neutral-400',
     value: 'text-neutral-900',
   },
 };
 
-function MetricCard({ label, value, subtext, icon, color }: MetricCardProps) {
-  const colors = COLOR_MAP[color];
+function MetricCard({ label, value, subtext, color }: MetricCardProps) {
+  const style = COLOR_MAP[color];
   return (
-    <div className="bg-white rounded-lg border border-neutral-200 p-3.5">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-xs text-neutral-500 font-medium">{label}</p>
-          <p className={`text-xl font-semibold mt-1 tabular-nums ${colors.value}`}>
-            {value}
-          </p>
-          {subtext && (
-            <p className="text-[11px] text-neutral-400 mt-0.5">{subtext}</p>
-          )}
-        </div>
-        <div className={`p-1.5 rounded-md ${colors.bg}`}>
-          {icon}
-        </div>
-      </div>
+    <div className={`bg-white rounded-lg border border-neutral-200 border-l-4 ${style.border} p-4`}>
+      <p className="text-xs text-neutral-500 font-medium">{label}</p>
+      <p className="text-2xl font-bold mt-1 tabular-nums text-neutral-900 tracking-tight">
+        {value}
+      </p>
+      {subtext && (
+        <p className="text-xs text-neutral-400 mt-1 font-medium">{subtext}</p>
+      )}
     </div>
   );
 }
@@ -88,33 +72,29 @@ export function MetricStrip({
     '₹' + n.toLocaleString('en-IN', { maximumFractionDigits: 0 });
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
       <MetricCard
         label="Recovered"
         value={formatCurrency(recovered)}
-        subtext={`${recoveryRate}% recovery rate`}
-        icon={<TrendingUp className="w-4 h-4 text-green-600" />}
+        subtext={`${recoveryRate}% overall recovery rate`}
         color="green"
       />
       <MetricCard
         label="At risk"
         value={formatCurrency(atRisk)}
-        subtext="Outstanding amount"
-        icon={<AlertTriangle className="w-4 h-4 text-amber-600" />}
+        subtext="Active outstanding balance"
         color="amber"
       />
       <MetricCard
         label="Active cases"
         value={activeCases.toString()}
         subtext="In recovery pipeline"
-        icon={<Activity className="w-4 h-4 text-blue-600" />}
         color="blue"
       />
       <MetricCard
         label="Escalated"
         value={escalated.toString()}
-        subtext="Needs attention"
-        icon={<ArrowUpRight className="w-4 h-4 text-red-600" />}
+        subtext="Requires human review / handoff"
         color="red"
       />
     </div>

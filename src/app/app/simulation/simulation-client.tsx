@@ -72,7 +72,7 @@ export function SimulationClient({
           </div>
           <div className="h-3 w-px bg-neutral-300" />
           <div>
-            <span className="text-neutral-400">Active Cases: </span>
+            <span className="text-neutral-400">Total Cases: </span>
             <span className="font-semibold text-neutral-900">{totalCases}</span>
           </div>
         </div>

@@ -2,6 +2,7 @@
  * Status badge component per §9 — Maps RecoveryCaseState to semantic colors.
  *
  * Color is never the sole state signal — every badge carries a text label (§14).
+ * Red is strictly reserved for primary Escalation / Error states.
  */
 
 import { RecoveryCaseState } from '@/domain/state-machine/recovery-case.states';
@@ -100,8 +101,9 @@ export function EscalationBadge({ level }: { level: string }) {
     COLLECTIONS_HANDOFF: 'Collections',
   };
 
+  // Neutral gray chip per 07_REVIEW_NOTES.md B13 (avoids double-red diluting red semantic)
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">
+    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium bg-neutral-100 text-neutral-700 border border-neutral-200">
       {labels[level] ?? level}
     </span>
   );
