@@ -20,14 +20,14 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from('audit_events')
       .select('*', { count: 'exact' })
-      .order('created_at', { ascending: false });
+      .order('simulated_time', { ascending: false });
 
     if (entityType) query = query.eq('entity_type', entityType);
     if (actor) query = query.eq('actor', actor);
     if (eventType) query = query.eq('event_type', eventType);
     if (search) {
       query = query.or(
-        `entity_id.eq.${search},summary.ilike.%${search}%`
+        `reason.ilike.%${search}%,event_type.ilike.%${search}%`
       );
     }
 

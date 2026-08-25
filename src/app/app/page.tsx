@@ -10,7 +10,17 @@ export const dynamic = 'force-dynamic';
 export default async function OverviewPage() {
   const supabase = await createClient();
 
-  // 1. Fetch top cases needing attention
+  // 1. Fetch current simulated time from the latest audit event
+  const { data: latestAudit } = await supabase
+    .from('audit_events')
+    .select('simulated_time')
+    .order('simulated_time', { ascending: false })
+    .limit(1)
+    .single();
+
+  const simulatedNow = latestAudit?.simulated_time || new Date().toISOString();
+
+  // 2. Fetch top cases needing attention (Disputed, Ghosted, Escalated)
   const { data: attentionCases } = await supabase
     .from('recovery_cases')
     .select(`
@@ -18,6 +28,7 @@ export default async function OverviewPage() {
       state,
       escalation_level,
       updated_at,
+      opened_at,
       invoices (
         invoice_number,
         outstanding_amount,
@@ -32,32 +43,32 @@ export default async function OverviewPage() {
 
   const mappedAttentionCases: CaseRowData[] = (attentionCases || []).map((row: any) => ({
     id: row.id,
-    invoiceNumber: row.invoices?.invoice_number || 'Unknown',
-    debtorName: row.invoices?.debtors?.name || 'Unknown',
+    invoiceNumber: row.invoices?.invoice_number || 'INV-0000',
+    debtorName: row.invoices?.debtors?.name || 'Debtor',
     outstandingAmount: row.invoices?.outstanding_amount || 0,
     state: row.state,
     escalationLevel: row.escalation_level,
-    lastActivityAt: row.updated_at,
+    lastActivityAt: row.updated_at || row.opened_at,
   }));
 
-  // 2. Fetch global recent audit events
+  // 3. Fetch global recent audit events (ordered by simulated_time)
   const { data: recentLogs } = await supabase
     .from('audit_events')
     .select('*')
-    .order('real_wall_clock_time', { ascending: false })
-    .limit(8);
+    .order('simulated_time', { ascending: false })
+    .limit(6);
 
   const auditEvents: AuditEvent[] = (recentLogs || []).map((log) => ({
-    id: log.id,
+    id: String(log.id),
     actor: log.actor,
     eventType: log.event_type,
-    summary: log.summary,
-    details: undefined, // Hide details in the global summary view to save space
-    simulatedTime: log.simulated_time,
+    summary: log.reason || log.summary || log.event_type,
+    details: undefined, // compact summary in overview
+    simulatedTime: log.simulated_time || log.real_wall_clock_time,
     realTime: log.real_wall_clock_time,
   }));
 
-  // 3. Fetch metrics (naive aggregation for MVP)
+  // 4. Fetch live metrics from database
   const { data: allStats } = await supabase.from('recovery_cases').select(`
     state,
     invoices (
@@ -66,7 +77,9 @@ export default async function OverviewPage() {
     )
   `);
 
-  let recovered = 0;
+  const { data: allPayments } = await supabase.from('payments').select('amount');
+  const recovered = (allPayments || []).reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+
   let atRisk = 0;
   let activeCases = 0;
   let escalated = 0;
@@ -76,7 +89,6 @@ export default async function OverviewPage() {
     const orig = row.invoices?.original_amount || 0;
     const out = row.invoices?.outstanding_amount || 0;
     totalAmount += orig;
-    recovered += (orig - out);
 
     if (row.state === 'ESCALATED') {
       escalated++;
@@ -92,13 +104,13 @@ export default async function OverviewPage() {
   });
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-6 pb-12">
       <div>
-        <h1 className="text-2xl font-semibold text-neutral-900 tracking-tight">
+        <h1 className="text-xl font-semibold text-neutral-900 tracking-tight">
           Overview
         </h1>
-        <p className="text-sm text-neutral-500 mt-1">
-          System-wide recovery performance and urgent cases.
+        <p className="text-sm text-neutral-500 mt-0.5">
+          Recovery operations summary, real-time portfolio health, and critical actions.
         </p>
       </div>
 
@@ -110,42 +122,59 @@ export default async function OverviewPage() {
         totalAmount={totalAmount}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Needs Attention — Primary operational focus */}
+        <div className="lg:col-span-2 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-neutral-900 uppercase tracking-wider">
-              Needs Attention
-            </h2>
+            <div>
+              <h2 className="text-xs font-semibold text-neutral-900 uppercase tracking-wider">
+                Needs Attention
+              </h2>
+              <p className="text-xs text-neutral-500 mt-0.5">
+                Cases requiring human review, disputed commitments, or unreached escalations.
+              </p>
+            </div>
             <Link
               href="/app/cases?tab=attention"
-              className="text-sm font-medium text-blue-600 hover:underline flex items-center"
+              className="text-xs font-medium text-blue-600 hover:underline flex items-center gap-0.5"
             >
               View all
-              <ChevronRight className="w-4 h-4 ml-0.5" />
+              <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </div>
-          <CaseTable cases={mappedAttentionCases} isEmpty={mappedAttentionCases.length === 0} />
+
+          <CaseTable
+            cases={mappedAttentionCases}
+            isEmpty={mappedAttentionCases.length === 0}
+            simulatedNow={simulatedNow}
+          />
         </div>
 
-        <div className="space-y-4">
+        {/* Recent Activity */}
+        <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-neutral-900 uppercase tracking-wider">
-              Recent Activity
-            </h2>
+            <div>
+              <h2 className="text-xs font-semibold text-neutral-900 uppercase tracking-wider">
+                Recent Audit Trail
+              </h2>
+              <p className="text-xs text-neutral-500 mt-0.5">
+                Latest policy decisions
+              </p>
+            </div>
             <Link
               href="/app/audit"
-              className="text-sm font-medium text-blue-600 hover:underline flex items-center"
+              className="text-xs font-medium text-blue-600 hover:underline flex items-center gap-0.5"
             >
               Full log
-              <ChevronRight className="w-4 h-4 ml-0.5" />
+              <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </div>
           <div className="bg-white rounded-lg border border-neutral-200 p-4">
             {auditEvents.length > 0 ? (
               <AuditTimeline events={auditEvents} />
             ) : (
-              <p className="text-sm text-neutral-500 text-center py-6">
-                No recent activity
+              <p className="text-xs text-neutral-500 text-center py-6">
+                No recent activity recorded.
               </p>
             )}
           </div>

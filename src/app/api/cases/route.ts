@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerClient } from '@/infra/supabase-server-client';
 
-const TERMINAL_STATES = ['CLOSED_PAID', 'CLOSED_PARTIAL', 'CLOSED_WRITTEN_OFF'];
+const ATTENTION_STATES = ['DISPUTE_OPEN', 'GHOSTED', 'ESCALATED'];
 
 // Urgency ordering — escalated first, closed last
 const STATE_URGENCY: Record<string, number> = {
@@ -40,16 +40,16 @@ export async function GET(request: NextRequest) {
         `
         id,
         invoice_id,
-        debtor_id,
         state,
         escalation_level,
-        created_at,
         updated_at,
-        invoices!inner (
+        opened_at,
+        invoices (
+          id,
           invoice_number,
           outstanding_amount,
-          due_date,
-          debtors!inner (
+          original_due_date,
+          debtors (
             name
           )
         )
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
 
     // Tab filter
     if (tab === 'attention') {
-      query = query.not('state', 'in', `(${TERMINAL_STATES.join(',')})`);
+      query = query.in('state', ATTENTION_STATES);
     }
 
     // State filter
@@ -81,9 +81,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Pagination
-    query = query.range(offset, offset + limit - 1);
+    if (limit > 0) {
+      query = query.range(offset, offset + limit - 1);
+    }
 
-    // Sort by updated_at desc (we'll re-sort by urgency client-side)
+    // Sort by updated_at desc
     query = query.order('updated_at', { ascending: false });
 
     const { data, error, count } = await query;
@@ -101,7 +103,6 @@ export async function GET(request: NextRequest) {
       const urgencyA = STATE_URGENCY[a.state] ?? 99;
       const urgencyB = STATE_URGENCY[b.state] ?? 99;
       if (urgencyA !== urgencyB) return urgencyA - urgencyB;
-      // Within same urgency, most recently updated first
       return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
     });
 

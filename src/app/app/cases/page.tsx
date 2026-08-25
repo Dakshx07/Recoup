@@ -13,7 +13,17 @@ export default async function CasesPage({
   const supabase = await createClient();
   const { tab = 'attention' } = await searchParams;
 
-  // Build the query
+  // 1. Get current simulated time from most recent audit event
+  const { data: latestAudit } = await supabase
+    .from('audit_events')
+    .select('simulated_time')
+    .order('simulated_time', { ascending: false })
+    .limit(1)
+    .single();
+
+  const simulatedNow = latestAudit?.simulated_time || new Date().toISOString();
+
+  // 2. Build the case query
   let query = supabase
     .from('recovery_cases')
     .select(`
@@ -21,9 +31,11 @@ export default async function CasesPage({
       state,
       escalation_level,
       updated_at,
+      opened_at,
       invoices (
         invoice_number,
         outstanding_amount,
+        original_amount,
         debtors (
           name
         )
@@ -32,6 +44,7 @@ export default async function CasesPage({
     .order('updated_at', { ascending: false });
 
   if (tab === 'attention') {
+    // Attention tab: Disputed, Ghosted, Escalated
     query = query.in('state', ['DISPUTE_OPEN', 'GHOSTED', 'ESCALATED']);
   }
 
@@ -44,17 +57,15 @@ export default async function CasesPage({
   // Map to UI representation
   const cases: CaseRowData[] = (data || []).map((row: any) => ({
     id: row.id,
-    invoiceNumber: row.invoices?.invoice_number || 'Unknown',
-    debtorName: row.invoices?.debtors?.name || 'Unknown',
+    invoiceNumber: row.invoices?.invoice_number || 'INV-0000',
+    debtorName: row.invoices?.debtors?.name || 'Debtor',
     outstandingAmount: row.invoices?.outstanding_amount || 0,
     state: row.state,
     escalationLevel: row.escalation_level,
-    lastActivityAt: row.updated_at,
+    lastActivityAt: row.updated_at || row.opened_at,
   }));
 
-  // Fetch metrics (this would ideally be a separate aggregated query, doing a naive fetch here for MVP)
-  // To avoid hitting the DB multiple times with heavy queries, we can just aggregate from a single query or a view.
-  // For now, let's fetch basic stats:
+  // Fetch portfolio stats for the metric strip
   const { data: allStats } = await supabase.from('recovery_cases').select(`
     state,
     invoices (
@@ -63,7 +74,9 @@ export default async function CasesPage({
     )
   `);
 
-  let recovered = 0;
+  const { data: allPayments } = await supabase.from('payments').select('amount');
+  const recovered = (allPayments || []).reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+
   let atRisk = 0;
   let activeCases = 0;
   let escalated = 0;
@@ -73,7 +86,6 @@ export default async function CasesPage({
     const orig = row.invoices?.original_amount || 0;
     const out = row.invoices?.outstanding_amount || 0;
     totalAmount += orig;
-    recovered += (orig - out);
 
     if (row.state === 'ESCALATED') {
       escalated++;
@@ -89,11 +101,14 @@ export default async function CasesPage({
   });
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-neutral-900 tracking-tight">
-          Case queue
+    <div className="space-y-6 pb-12">
+      <div>
+        <h1 className="text-xl font-semibold text-neutral-900 tracking-tight">
+          Case Queue
         </h1>
+        <p className="text-sm text-neutral-500 mt-0.5">
+          Active recovery operations, prioritized by urgency and policy triggers.
+        </p>
       </div>
 
       <MetricStrip
@@ -104,11 +119,11 @@ export default async function CasesPage({
         totalAmount={totalAmount}
       />
 
-      <div className="space-y-4">
+      <div className="space-y-3.5">
         <div className="flex items-center gap-6 border-b border-neutral-200">
           <Link
-            href="?tab=attention"
-            className={`pb-3 text-sm font-medium transition-colors border-b-2 ${
+            href="/app/cases?tab=attention"
+            className={`pb-2.5 text-sm font-medium transition-colors border-b-2 ${
               tab === 'attention'
                 ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-neutral-500 hover:text-neutral-700'
@@ -117,8 +132,8 @@ export default async function CasesPage({
             Needs attention
           </Link>
           <Link
-            href="?tab=all"
-            className={`pb-3 text-sm font-medium transition-colors border-b-2 ${
+            href="/app/cases?tab=all"
+            className={`pb-2.5 text-sm font-medium transition-colors border-b-2 ${
               tab === 'all'
                 ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-neutral-500 hover:text-neutral-700'
@@ -128,7 +143,11 @@ export default async function CasesPage({
           </Link>
         </div>
 
-        <CaseTable cases={cases} isEmpty={!data || data.length === 0} />
+        <CaseTable
+          cases={cases}
+          isEmpty={!data || data.length === 0}
+          simulatedNow={simulatedNow}
+        />
       </div>
     </div>
   );

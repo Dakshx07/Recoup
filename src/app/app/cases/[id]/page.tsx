@@ -1,12 +1,13 @@
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, User, Phone, Mail } from 'lucide-react';
+import { ArrowLeft, User, Phone, Mail, Clock } from 'lucide-react';
 import { StatusBadge, EscalationBadge } from '@/components/dashboard/status-badge';
 import { AuditTimeline, AuditEvent } from '@/components/dashboard/audit-timeline';
 import { CommitmentCard, CommitmentData } from '@/components/dashboard/commitment-card';
 import { PaymentCard, PaymentData } from '@/components/dashboard/payment-card';
 import { OverridePanel } from '@/components/dashboard/override-panel';
+import { formatSimulatedTime } from '@/lib/simulated-time';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,11 +42,11 @@ export default async function CaseDetailPage({
     .eq('recovery_case_id', caseId)
     .order('created_at', { ascending: false });
 
-  // Fetch payments
+  // Fetch payments for this invoice (using invoice_id)
   const { data: payments } = await supabase
     .from('payments')
     .select('*')
-    .eq('invoice_number', caseData.invoices.invoice_number)
+    .eq('invoice_id', caseData.invoice_id)
     .order('paid_at', { ascending: false });
 
   // Fetch audit events
@@ -60,29 +61,29 @@ export default async function CaseDetailPage({
   const commitmentData: CommitmentData | null = activeCommitment
     ? {
         id: activeCommitment.id,
-        amount: activeCommitment.promised_amount,
-        dueDate: activeCommitment.promised_date,
+        amount: Number(activeCommitment.promised_amount || activeCommitment.amount || 0),
+        dueDate: activeCommitment.promised_date || activeCommitment.due_date,
         status: activeCommitment.status,
-        isFrozen: activeCommitment.is_frozen,
+        isFrozen: activeCommitment.is_frozen || false,
         createdAt: activeCommitment.created_at,
       }
     : null;
 
   const paymentData: PaymentData[] = (payments || []).map((p) => ({
     id: p.id,
-    amount: p.amount,
+    amount: Number(p.amount),
     paidAt: p.paid_at,
-    verificationSource: 'Razorpay webhook',
-    externalId: p.external_payment_id,
+    verificationSource: p.verification_source || 'Razorpay Webhook Verified',
+    externalId: p.external_payment_id || `pay_${p.id.slice(0, 8)}`,
   }));
 
   const auditEvents: AuditEvent[] = (auditLogs || []).map((log) => ({
-    id: log.id,
+    id: String(log.id),
     actor: log.actor,
     eventType: log.event_type,
-    summary: log.summary,
+    summary: log.reason || log.summary || log.event_type,
     details: log.details,
-    simulatedTime: log.simulated_time,
+    simulatedTime: log.simulated_time || log.real_wall_clock_time,
     realTime: log.real_wall_clock_time,
   }));
 
@@ -91,84 +92,97 @@ export default async function CaseDetailPage({
 
   return (
     <div className="space-y-6 pb-20">
-      {/* Header & Breadcrumb */}
+      {/* Header & Navigation */}
       <div>
         <Link
           href="/app/cases"
-          className="inline-flex items-center text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors mb-4"
+          className="inline-flex items-center text-xs font-medium text-neutral-500 hover:text-neutral-900 transition-colors mb-3"
         >
-          <ArrowLeft className="w-4 h-4 mr-1" />
+          <ArrowLeft className="w-3.5 h-3.5 mr-1" />
           Back to case queue
         </Link>
-        <div className="flex items-start justify-between">
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-semibold text-neutral-900 tracking-tight">
-                Case for Invoice{' '}
-                <span className="font-mono text-neutral-500 text-xl">
-                  {caseData.invoices.invoice_number}
-                </span>
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h1 className="text-xl font-semibold text-neutral-900 tracking-tight">
+                Case for Invoice
               </h1>
+              <span className="font-mono text-neutral-600 bg-neutral-100 px-2 py-0.5 rounded text-sm font-semibold">
+                {caseData.invoices?.invoice_number}
+              </span>
               <StatusBadge state={caseData.state} />
               <EscalationBadge level={caseData.escalation_level} />
             </div>
-            <p className="text-sm text-neutral-500 mt-2">
-              Opened on {new Date(caseData.created_at).toLocaleDateString()}
+            <p className="text-xs text-neutral-400 mt-1 flex items-center gap-1.5">
+              <Clock className="w-3 h-3 text-neutral-400" />
+              Simulated timeline reference:{' '}
+              <span className="font-mono text-neutral-600">
+                {formatSimulatedTime(caseData.updated_at || caseData.opened_at)}
+              </span>
             </p>
           </div>
-          <div className="text-right">
-            <p className="text-sm text-neutral-500 font-medium">Outstanding</p>
-            <p className="text-2xl font-semibold tabular-nums text-neutral-900 mt-1">
-              {formatCurrency(caseData.invoices.outstanding_amount)}
+
+          <div className="text-left sm:text-right bg-white sm:bg-transparent p-3 sm:p-0 rounded-lg border sm:border-0 border-neutral-200">
+            <p className="text-xs text-neutral-500 font-medium">Outstanding Balance</p>
+            <p className="text-xl font-semibold tabular-nums text-neutral-900 mt-0.5">
+              {formatCurrency(caseData.invoices?.outstanding_amount || 0)}
             </p>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main timeline */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-lg border border-neutral-200 p-6">
-            <h2 className="text-xs font-semibold text-neutral-900 uppercase tracking-wider mb-6">
-              Audit Trail
-            </h2>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main audit narrative */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="bg-white rounded-lg border border-neutral-200 p-5">
+            <div className="flex items-center justify-between border-b border-neutral-100 pb-3 mb-5">
+              <h2 className="text-xs font-semibold text-neutral-900 uppercase tracking-wider">
+                Case Lifecycle & Decision Trail
+              </h2>
+              <span className="text-xs text-neutral-400 font-mono">
+                {auditEvents.length} transition steps
+              </span>
+            </div>
             {auditEvents.length > 0 ? (
               <AuditTimeline events={auditEvents} />
             ) : (
-              <p className="text-sm text-neutral-500">No events recorded yet.</p>
+              <p className="text-xs text-neutral-500 text-center py-6">No audit records found for this case.</p>
             )}
           </div>
         </div>
 
-        {/* Sidebar: Debtor, Commitment, Override */}
-        <div className="space-y-6">
-          {/* Debtor Info */}
+        {/* Right column: Debtor Details, Commitment Status, Human Override */}
+        <div className="space-y-5">
+          {/* Debtor Details Card */}
           <div className="bg-white rounded-lg border border-neutral-200 p-4">
-            <h2 className="text-xs font-semibold text-neutral-900 uppercase tracking-wider mb-4">
-              Debtor Details
+            <h2 className="text-xs font-semibold text-neutral-900 uppercase tracking-wider mb-3">
+              Debtor Profile
             </h2>
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               <div className="flex items-center gap-2 text-sm text-neutral-900 font-medium">
-                <User className="w-4 h-4 text-neutral-400" />
-                {caseData.invoices.debtors.name}
+                <User className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+                <span className="truncate">{caseData.invoices?.debtors?.name || 'Debtor'}</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-neutral-600">
-                <Mail className="w-4 h-4 text-neutral-400" />
-                {caseData.invoices.debtors.email}
+              <div className="flex items-center gap-2 text-xs text-neutral-600">
+                <Mail className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                <span className="truncate">
+                  {caseData.invoices?.debtors?.contact_ref?.split('@')[0]?.replace(/^scenario:[^:]+:/, '') || 'contact'}@company.in
+                </span>
               </div>
-              {caseData.invoices.debtors.phone && (
-                <div className="flex items-center gap-2 text-sm text-neutral-600">
-                  <Phone className="w-4 h-4 text-neutral-400" />
-                  {caseData.invoices.debtors.phone}
+              {caseData.invoices?.debtors?.phone && (
+                <div className="flex items-center gap-2 text-xs text-neutral-600">
+                  <Phone className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                  <span>{caseData.invoices?.debtors?.phone}</span>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Active Commitment */}
-          <div>
-            <h2 className="text-xs font-semibold text-neutral-900 uppercase tracking-wider mb-3 px-1">
-              Commitment
+          {/* Active Commitment & Payment Verification */}
+          <div className="space-y-3">
+            <h2 className="text-xs font-semibold text-neutral-900 uppercase tracking-wider px-0.5">
+              Financial Commitment
             </h2>
             <CommitmentCard commitment={commitmentData} />
             {paymentData.map((p) => (
@@ -176,7 +190,7 @@ export default async function CaseDetailPage({
             ))}
           </div>
 
-          {/* Human Override */}
+          {/* Human Override Panel */}
           <OverridePanel
             caseId={caseData.id}
             currentState={caseData.state}

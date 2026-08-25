@@ -10,8 +10,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "generate-synthetic-data": "npx tsx scripts/generate-synthetic-data.ts",
-    "eval": "npx tsx eval/run-eval.ts"
+    "generate-synthetic-data": "npx tsx --env-file=.env.local scripts/generate-synthetic-data.ts",
+    "simulate": "npx tsx --env-file=.env.local scripts/simulation-runner.ts",
+    "eval": "npx tsx --env-file=.env.local eval/run-eval.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.0",

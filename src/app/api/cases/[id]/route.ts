@@ -13,17 +13,17 @@ export async function GET(
     const { id } = await params;
     const supabase = getServerClient();
 
-    // Fetch case with invoice
+    // Fetch case with invoice and commitments
     const { data: caseData, error: caseError } = await supabase
       .from('recovery_cases')
       .select(
         `
         *,
-        invoices (*),
-        commitments (*),
-        payments (*),
-        debtor_replies (*),
-        reply_parses (*)
+        invoices (
+          *,
+          debtors (*)
+        ),
+        commitments (*)
       `
       )
       .eq('id', id)
@@ -36,19 +36,29 @@ export async function GET(
       return NextResponse.json({ error: caseError.message }, { status: 500 });
     }
 
+    // Fetch payments via invoice_id
+    const { data: payments } = await supabase
+      .from('payments')
+      .select('*')
+      .eq('invoice_id', caseData.invoice_id)
+      .order('paid_at', { ascending: false });
+
     // Fetch audit events for this case
     const { data: auditEvents, error: auditError } = await supabase
       .from('audit_events')
       .select('*')
       .eq('entity_id', id)
-      .order('created_at', { ascending: true });
+      .order('simulated_time', { ascending: true });
 
     if (auditError) {
       console.error('Audit fetch error:', auditError);
     }
 
     return NextResponse.json({
-      case: caseData,
+      case: {
+        ...caseData,
+        payments: payments ?? [],
+      },
       auditEvents: auditEvents ?? [],
     });
   } catch (err) {
