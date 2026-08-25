@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
-import { Shield, Sparkles, User, Settings, CheckCircle, Search, Filter, ArrowUpRight, ExternalLink } from 'lucide-react';
-import { formatSimulatedTime } from '@/lib/simulated-time';
+import { Shield, Sparkles, User, Settings, CheckCircle, Search, ExternalLink } from 'lucide-react';
+import { formatSimulatedTime, formatSimulatedTimeAgo } from '@/lib/simulated-time';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +21,16 @@ export default async function AuditPage({
   const { actor, event_type, search } = await searchParams;
   const supabase = await createClient();
 
+  // 1. Fetch current simulated time from most recent audit event
+  const { data: latestAudit } = await supabase
+    .from('audit_events')
+    .select('simulated_time')
+    .order('simulated_time', { ascending: false })
+    .limit(1)
+    .single();
+
+  const simulatedNow = latestAudit?.simulated_time || new Date().toISOString();
+
   let query = supabase
     .from('audit_events')
     .select('*')
@@ -37,7 +47,7 @@ export default async function AuditPage({
     query = query.or(`reason.ilike.%${search}%,event_type.ilike.%${search}%`);
   }
 
-  const { data: logs, error } = await query;
+  const { data: logs } = await query;
   const events = logs || [];
 
   return (
@@ -48,10 +58,12 @@ export default async function AuditPage({
             System Audit Log
           </h1>
           <p className="text-sm text-neutral-500 mt-0.5">
-            Immutable, dual-timestamped ledger of every state transition, policy decision, and human override.
+            Immutable, dual-timestamped ledger. All relative times calculated against simulated business clock.
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs text-neutral-500 font-mono bg-white px-3 py-1.5 rounded-md border border-neutral-200">
+          <span>Current Simulated: {formatSimulatedTime(simulatedNow)}</span>
+          <span className="text-neutral-300">|</span>
           <span>{events.length} events logged</span>
         </div>
       </div>
@@ -90,6 +102,8 @@ export default async function AuditPage({
           >
             <option value="all">All Event Types</option>
             <option value="case_opened">Case Opened</option>
+            <option value="debtor_reply_received">Debtor Reply Received</option>
+            <option value="reply_parsed">Reply Parsed (LLM)</option>
             <option value="commitment_validated">Commitment Validated</option>
             <option value="dispute_detected_commitment_frozen">Dispute (Commitment Frozen)</option>
             <option value="commitment_kept">Commitment Kept</option>
@@ -137,6 +151,7 @@ export default async function AuditPage({
                   const actorConfig = ACTOR_BADGES[event.actor] || ACTOR_BADGES.system;
                   const ActorIcon = actorConfig.icon;
                   const isFreeze = event.event_type?.includes('freeze') || event.event_type?.includes('dispute');
+                  const relativeTime = formatSimulatedTimeAgo(event.simulated_time || event.real_wall_clock_time, simulatedNow);
 
                   return (
                     <tr
@@ -146,7 +161,14 @@ export default async function AuditPage({
                       }`}
                     >
                       <td className="px-4 py-2.5 font-mono text-neutral-600">
-                        {formatSimulatedTime(event.simulated_time || event.real_wall_clock_time)}
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-neutral-800">
+                            {formatSimulatedTime(event.simulated_time || event.real_wall_clock_time)}
+                          </span>
+                          <span className="text-[10px] text-neutral-400">
+                            {relativeTime}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-4 py-2.5">
                         <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium ${actorConfig.bg} ${actorConfig.text}`}>

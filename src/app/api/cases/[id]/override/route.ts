@@ -4,6 +4,10 @@
  * Handles canonical dispute resolution:
  * - reject_dispute: is_frozen = false on active commitment, case -> COMMITMENT_ACTIVE (or AWAITING_REPLY)
  * - uphold_dispute: status = VOIDED_BY_DISPUTE on commitment, case -> AWAITING_REPLY (or CLOSED_WRITTEN_OFF)
+ * 
+ * Concurrency & Idempotency:
+ * - Enforces atomic optimistic state precondition (.eq('state', expectedState))
+ * - Ensures concurrent/duplicate submissions produce exactly ONE state transition and ONE audit event.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -25,7 +29,7 @@ export async function POST(
 
     const { id } = await params;
     const body = await request.json();
-    const { action, justification } = body;
+    const { action, justification, expectedState } = body;
 
     // Validate justification
     if (!justification || justification.trim().length === 0) {
@@ -50,7 +54,7 @@ export async function POST(
 
     const supabase = getServerClient();
 
-    // Fetch current case state
+    // 1. Fetch current case state
     const { data: caseData, error: fetchError } = await supabase
       .from('recovery_cases')
       .select('*')
@@ -59,6 +63,14 @@ export async function POST(
 
     if (fetchError || !caseData) {
       return NextResponse.json({ error: 'Case not found' }, { status: 404 });
+    }
+
+    // 2. Validate expected state if provided by client
+    if (expectedState && caseData.state !== expectedState) {
+      return NextResponse.json(
+        { error: `Conflict: Case is currently in ${caseData.state}, expected ${expectedState}. Please refresh.` },
+        { status: 409 }
+      );
     }
 
     let newState = caseData.state;
@@ -73,10 +85,6 @@ export async function POST(
         .eq('is_frozen', true);
 
       if (commitments && commitments.length > 0) {
-        await supabase
-          .from('commitments')
-          .update({ is_frozen: false })
-          .eq('id', commitments[0].id);
         newState = 'COMMITMENT_ACTIVE';
         reasonText = `Dispute rejected by reviewer (${reviewerEmail}) — commitment unfrozen toward original due date. Justification: ${justification.trim()}`;
       } else {
@@ -84,12 +92,6 @@ export async function POST(
         reasonText = `Dispute rejected by reviewer (${reviewerEmail}) — recovery cadence resumed. Justification: ${justification.trim()}`;
       }
     } else if (action === 'uphold_dispute') {
-      // Void commitment
-      await supabase
-        .from('commitments')
-        .update({ status: 'VOIDED_BY_DISPUTE', is_frozen: false, resolved_at: new Date().toISOString() })
-        .eq('recovery_case_id', id);
-
       newState = 'AWAITING_REPLY';
       reasonText = `Dispute upheld by reviewer (${reviewerEmail}) — commitment voided (VOIDED_BY_DISPUTE). Case reopened for negotiation. Justification: ${justification.trim()}`;
     } else if (action === 'escalate') {
@@ -100,20 +102,44 @@ export async function POST(
       reasonText = `Balance written off by reviewer (${reviewerEmail}). Justification: ${justification.trim()}`;
     }
 
-    // Update case state
-    const { error: updateError } = await supabase
+    // 3. Atomic Optimistic State Precondition Update
+    const { data: updatedCases, error: updateError } = await supabase
       .from('recovery_cases')
       .update({
         state: newState,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', id);
+      .eq('id', id)
+      .eq('state', caseData.state) // ATOMIC LOCK: Only succeed if state has not mutated concurrently
+      .select();
 
     if (updateError) {
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
-    // Append to audit trail
+    // If 0 rows updated, a concurrent request has already mutated the state
+    if (!updatedCases || updatedCases.length === 0) {
+      return NextResponse.json(
+        { error: 'Conflict: Case state has changed concurrently. Please refresh the page.' },
+        { status: 409 }
+      );
+    }
+
+    // 4. Mutate commitment rows corresponding to the won transition
+    if (action === 'reject_dispute') {
+      await supabase
+        .from('commitments')
+        .update({ is_frozen: false })
+        .eq('recovery_case_id', id)
+        .eq('is_frozen', true);
+    } else if (action === 'uphold_dispute') {
+      await supabase
+        .from('commitments')
+        .update({ status: 'VOIDED_BY_DISPUTE', is_frozen: false, resolved_at: new Date().toISOString() })
+        .eq('recovery_case_id', id);
+    }
+
+    // 5. Append EXACTLY ONE immutable audit event
     await supabase.from('audit_events').insert({
       entity_type: 'recovery_case',
       entity_id: id,

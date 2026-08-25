@@ -50,12 +50,17 @@ export default async function CaseDetailPage({
     .eq('invoice_id', caseData.invoice_id)
     .order('paid_at', { ascending: false });
 
-  // Fetch audit events
+  // Fetch audit events in chronological order
   const { data: auditLogs } = await supabase
     .from('audit_events')
     .select('*')
     .eq('entity_id', caseId)
-    .order('simulated_time', { ascending: true }); // chronological
+    .order('simulated_time', { ascending: true });
+
+  const latestAudit = auditLogs && auditLogs.length > 0 ? auditLogs[auditLogs.length - 1] : null;
+
+  // Single canonical simulated clock for this case
+  const caseSimulatedNow = latestAudit?.simulated_time || caseData.opened_at || new Date().toISOString();
 
   const activeCommitment = commitments?.find((c) => c.status === 'VALID_ACTIVE' || c.status === 'PARTIALLY_KEPT') || commitments?.[0];
 
@@ -91,7 +96,6 @@ export default async function CaseDetailPage({
   const formatCurrency = (n: number) =>
     '₹' + n.toLocaleString('en-IN', { maximumFractionDigits: 0 });
 
-  const latestAudit = auditLogs && auditLogs.length > 0 ? auditLogs[auditLogs.length - 1] : null;
   const realWallClockTime = latestAudit?.real_wall_clock_time 
     ? format(new Date(latestAudit.real_wall_clock_time), 'yyyy-MM-dd HH:mm:ss') + ' UTC'
     : '2026-08-25 03:45:10 UTC';
@@ -121,11 +125,11 @@ export default async function CaseDetailPage({
               <EscalationBadge level={caseData.escalation_level} />
             </div>
 
-            {/* Dual Timestamps Header Display */}
+            {/* Dual Timestamps Header: Simulated business clock + Immutable real wall-clock */}
             <div className="flex flex-wrap items-center gap-4 text-xs font-mono mt-2.5 text-neutral-500">
               <span className="flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-neutral-400" />
-                Simulated Time: <span className="font-semibold text-neutral-800">{formatSimulatedTime(caseData.updated_at || caseData.opened_at)}</span>
+                Simulated Time: <span className="font-semibold text-neutral-800">{formatSimulatedTime(caseSimulatedNow, true)}</span>
               </span>
               <span className="text-neutral-300">|</span>
               <span className="flex items-center gap-1.5 text-neutral-400">
@@ -154,7 +158,7 @@ export default async function CaseDetailPage({
                   Case Lifecycle & Causal Decision Trail
                 </h2>
                 <p className="text-[11px] text-neutral-500 mt-0.5">
-                  Append-only immutable record. Demonstrates inbound replies, LLM intent extractions, and deterministic policy rule enforcements.
+                  Append-only immutable record. Relative times calculated against simulated business clock.
                 </p>
               </div>
               <span className="text-xs text-neutral-500 font-mono font-medium">
@@ -162,7 +166,7 @@ export default async function CaseDetailPage({
               </span>
             </div>
             {auditEvents.length > 0 ? (
-              <AuditTimeline events={auditEvents} />
+              <AuditTimeline events={auditEvents} simulatedNow={caseSimulatedNow} />
             ) : (
               <p className="text-xs text-neutral-500 text-center py-6">No audit records found for this case.</p>
             )}
@@ -201,9 +205,9 @@ export default async function CaseDetailPage({
             <h2 className="text-xs font-semibold text-neutral-900 uppercase tracking-wider px-0.5">
               Financial Commitment
             </h2>
-            <CommitmentCard commitment={commitmentData} />
+            <CommitmentCard commitment={commitmentData} simulatedNow={caseSimulatedNow} />
             {paymentData.map((p) => (
-              <PaymentCard key={p.id} payment={p} />
+              <PaymentCard key={p.id} payment={p} simulatedNow={caseSimulatedNow} />
             ))}
           </div>
 

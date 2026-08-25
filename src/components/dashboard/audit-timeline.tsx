@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Shield, Sparkles, User, Settings, CheckCircle, ChevronDown, ChevronUp, Mail } from 'lucide-react';
 import { format } from 'date-fns';
+import { formatSimulatedTime, formatSimulatedTimeAgo } from '@/lib/simulated-time';
 
 export interface AuditEvent {
   id: string;
@@ -17,6 +18,8 @@ export interface AuditEvent {
 
 interface AuditTimelineProps {
   events: AuditEvent[];
+  /** Current simulated business time */
+  simulatedNow?: string | Date;
 }
 
 const ACTOR_CONFIG = {
@@ -27,29 +30,23 @@ const ACTOR_CONFIG = {
   payment_verifier: { label: 'Payment Verifier', icon: CheckCircle, bg: 'bg-green-100', text: 'text-green-700', badge: 'bg-green-50 text-green-700 border-green-200' },
 };
 
-function formatSimTime(isoStr: string) {
-  const d = new Date(isoStr);
-  if (isNaN(d.getTime())) return '—';
-  return format(d, 'MMM d, yyyy · h:mm a');
-}
-
 function formatRealWallClock(isoStr: string) {
   const d = new Date(isoStr);
   if (isNaN(d.getTime())) return '—';
   return format(d, 'yyyy-MM-dd HH:mm:ss') + ' UTC';
 }
 
-export function AuditTimeline({ events }: AuditTimelineProps) {
+export function AuditTimeline({ events, simulatedNow }: AuditTimelineProps) {
   return (
     <div className="relative border-l border-neutral-200 ml-3 space-y-4 pb-4">
       {events.map((event) => (
-        <TimelineItem key={event.id} event={event} />
+        <TimelineItem key={event.id} event={event} simulatedNow={simulatedNow} />
       ))}
     </div>
   );
 }
 
-function TimelineItem({ event }: { event: AuditEvent }) {
+function TimelineItem({ event, simulatedNow }: { event: AuditEvent; simulatedNow?: string | Date }) {
   const [expanded, setExpanded] = useState(false);
   const config = ACTOR_CONFIG[event.actor] || ACTOR_CONFIG.system;
   const Icon = event.eventType === 'debtor_reply_received' ? Mail : config.icon;
@@ -57,6 +54,10 @@ function TimelineItem({ event }: { event: AuditEvent }) {
   const isDisputeOrFreeze =
     event.eventType.includes('dispute') || event.eventType.includes('freeze') || event.eventType.includes('DISPUTE');
   const isLLM = event.actor === 'llm';
+
+  const relativeTime = simulatedNow
+    ? formatSimulatedTimeAgo(event.simulatedTime, simulatedNow)
+    : '';
 
   return (
     <div className="relative pl-6">
@@ -93,10 +94,15 @@ function TimelineItem({ event }: { event: AuditEvent }) {
             </p>
           </div>
           
-          {/* Dual Timestamps per 02_BACKEND_SPEC.md §8 (Simulated + Real Wall-Clock) */}
+          {/* Dual Timestamps: Calculated against Simulated Now, real wall-clock kept for immutable audit */}
           <div className="text-left sm:text-right flex-shrink-0 font-mono">
             <p className="text-[11px] font-semibold text-neutral-800 tabular-nums">
-              {formatSimTime(event.simulatedTime)}
+              {formatSimulatedTime(event.simulatedTime)}
+              {relativeTime && (
+                <span className="text-neutral-500 font-normal ml-1">
+                  ({relativeTime})
+                </span>
+              )}
             </p>
             <p className="text-[10px] text-neutral-400 tabular-nums mt-0.5">
               Real: {formatRealWallClock(event.realTime)}

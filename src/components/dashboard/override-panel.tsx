@@ -90,12 +90,13 @@ export function OverridePanel({
   const selectedActionDef = actions.find((a) => a.id === selectedAction);
 
   async function handleSubmit() {
-    if (!selectedActionDef) return;
+    if (!selectedActionDef || loading) return;
     if (selectedActionDef.isDestructive && !confirming) {
       setConfirming(true);
       return;
     }
 
+    // Immediately enter submitting state to prevent double click
     setLoading(true);
     setError(null);
     try {
@@ -104,12 +105,15 @@ export function OverridePanel({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: selectedActionDef.id,
-          justification,
+          justification: justification.trim(),
+          expectedState: currentState,
         }),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        throw new Error('Failed to apply override action');
+        throw new Error(data.error || 'Failed to apply override action');
       }
 
       setSuccess(true);
@@ -171,6 +175,7 @@ export function OverridePanel({
                   type="radio"
                   name="override_action"
                   value={action.id}
+                  disabled={loading}
                   checked={selectedAction === action.id}
                   onChange={() => {
                     setSelectedAction(action.id);
@@ -203,7 +208,8 @@ export function OverridePanel({
           <textarea
             id="justification"
             rows={3}
-            className="w-full rounded-md border border-neutral-300 px-3 py-2 text-xs text-neutral-900 placeholder-neutral-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-colors"
+            disabled={loading}
+            className="w-full rounded-md border border-neutral-300 px-3 py-2 text-xs text-neutral-900 placeholder-neutral-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-colors disabled:bg-neutral-100"
             placeholder="Mandatory audit justification: explain the basis for upholding or rejecting this dispute..."
             value={justification}
             onChange={(e) => setJustification(e.target.value)}

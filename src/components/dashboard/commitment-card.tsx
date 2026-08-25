@@ -1,5 +1,5 @@
 import { Calendar, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
-import { format } from 'date-fns';
+import { formatSimulatedDate, formatSimulatedTimeAgo, formatSimulatedDueContext } from '@/lib/simulated-time';
 
 export interface CommitmentData {
   id: string;
@@ -12,9 +12,11 @@ export interface CommitmentData {
 
 interface CommitmentCardProps {
   commitment: CommitmentData | null;
+  /** Current simulated business time */
+  simulatedNow?: string | Date;
 }
 
-export function CommitmentCard({ commitment }: CommitmentCardProps) {
+export function CommitmentCard({ commitment, simulatedNow }: CommitmentCardProps) {
   if (!commitment) {
     return (
       <div className="bg-neutral-50 rounded-lg border border-neutral-200 border-dashed p-6 text-center">
@@ -91,6 +93,14 @@ export function CommitmentCard({ commitment }: CommitmentCardProps) {
   const config = getStatusConfig();
   const Icon = config.icon;
 
+  const dueRelative = simulatedNow
+    ? formatSimulatedDueContext(commitment.dueDate, simulatedNow)
+    : '';
+
+  const createdRelative = simulatedNow
+    ? formatSimulatedTimeAgo(commitment.createdAt, simulatedNow)
+    : '';
+
   return (
     <div className={`rounded-lg border p-4 ${config.bg} ${config.border}`}>
       <div className="flex items-center gap-2 mb-3">
@@ -109,18 +119,26 @@ export function CommitmentCard({ commitment }: CommitmentCardProps) {
         </div>
         <div className="text-right">
           <p className="text-xs text-neutral-500 mb-1">Due date</p>
-          <div className="flex items-center gap-1.5 text-neutral-900">
-            <Calendar className="w-4 h-4 text-neutral-400" />
-            <span className="font-medium">
-              {format(new Date(commitment.dueDate), 'MMM d, yyyy')}
-            </span>
+          <div className="flex flex-col items-end">
+            <div className="flex items-center gap-1.5 text-neutral-900">
+              <Calendar className="w-4 h-4 text-neutral-400" />
+              <span className="font-medium">
+                {formatSimulatedDate(commitment.dueDate, true)}
+              </span>
+            </div>
+            {dueRelative && (
+              <span className="text-[11px] font-mono text-neutral-500 mt-0.5">
+                ({dueRelative})
+              </span>
+            )}
           </div>
         </div>
       </div>
       
-      <div className="mt-4 pt-3 border-t border-black/5 flex justify-between items-center">
-        <span className="text-xs text-neutral-500">
-          Recorded on {format(new Date(commitment.createdAt), 'MMM d')}
+      <div className="mt-4 pt-3 border-t border-black/5 flex justify-between items-center text-xs text-neutral-500">
+        <span>
+          Recorded {formatSimulatedDate(commitment.createdAt, false)}
+          {createdRelative ? ` (${createdRelative})` : ''}
         </span>
         <span className="text-[10px] font-mono text-neutral-400 bg-white px-1.5 py-0.5 rounded border border-neutral-200">
           {commitment.id.split('-')[0]}
