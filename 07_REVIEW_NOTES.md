@@ -113,3 +113,24 @@ Not more features, not more screens — the screens that exist are close to func
 8. **B12 [Resolved]**: Introduced realistic late-webhook reconciliation behavior for broken promises (93.3% / 28 of 30 on schedule).
 9. **§D [Resolved]**: All 8 screens verified and captured in full-page fidelity, including Case Detail with active/frozen commitment cards and human override controls.
 
+---
+
+## H. Resolution & Verification Log (Round 5 — Case Detail & Narrative Alignment)
+
+1. **Case Detail Dispute Narrative [Resolved]**: Inspected and verified on `INV-2101` (`Olive Trading`), demonstrating a genuine `PROMISE_THEN_DISPUTE` case with an active frozen commitment (`₹42,000`, `is_frozen = true`, `status = VALID_ACTIVE`).
+2. **Canonical Dispute Override Actions [Resolved]**: Wired the exact required dispute actions in `OverridePanel`:
+   - `Reject dispute — resume commitment` (`is_frozen = false`, preserves due date)
+   - `Uphold dispute — void commitment` (`status = VOIDED_BY_DISPUTE`, reopens case for adjustment)
+   - Enforced mandatory justification textarea and confirmation step before execution.
+3. **Complete 7-Step Causal Trail & LLM Steps [Resolved]**: The timeline now explicitly renders the full chronological sequence:
+   - `system · case_opened`
+   - `system · debtor_reply_received` (inbound promise)
+   - `llm · reply_parsed` (structured `PROMISE_CANDIDATE`, 95.2% confidence)
+   - `policy_engine · commitment_validated`
+   - `system · debtor_reply_received` (inbound dispute)
+   - `llm · reply_parsed` (structured `DISPUTE_CANDIDATE`, 98.4% confidence)
+   - `policy_engine · dispute_detected_commitment_frozen` (frozen commitment enforcement)
+4. **Visible Dual Timestamps [Resolved]**: Displayed visibly on every timeline event (Simulated Business Time + Real Wall-Clock UTC) and on the case detail header.
+5. **Unreviewed Views [Resolved]**: Captured Case Detail mid-flow override with justification entered, Case Queue "All cases" tab (200 rows), and Simulation header with "Total Cases: 200".
+
+

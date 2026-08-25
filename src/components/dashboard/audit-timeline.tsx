@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Shield, Sparkles, User, Settings, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { Shield, Sparkles, User, Settings, CheckCircle, ChevronDown, ChevronUp, Mail } from 'lucide-react';
 import { format } from 'date-fns';
 
 export interface AuditEvent {
@@ -20,22 +20,28 @@ interface AuditTimelineProps {
 }
 
 const ACTOR_CONFIG = {
-  system: { icon: Settings, bg: 'bg-neutral-100', text: 'text-neutral-600' },
-  policy_engine: { icon: Shield, bg: 'bg-blue-100', text: 'text-blue-600' },
-  llm: { icon: Sparkles, bg: 'bg-purple-100', text: 'text-purple-600' },
-  human: { icon: User, bg: 'bg-amber-100', text: 'text-amber-600' },
-  payment_verifier: { icon: CheckCircle, bg: 'bg-green-100', text: 'text-green-600' },
+  system: { label: 'System', icon: Settings, bg: 'bg-neutral-100', text: 'text-neutral-700', badge: 'bg-neutral-100 text-neutral-700 border-neutral-200' },
+  policy_engine: { label: 'Policy Engine', icon: Shield, bg: 'bg-blue-100', text: 'text-blue-700', badge: 'bg-blue-50 text-blue-700 border-blue-200' },
+  llm: { label: 'LLM Parser', icon: Sparkles, bg: 'bg-purple-100', text: 'text-purple-700', badge: 'bg-purple-50 text-purple-700 border-purple-200' },
+  human: { label: 'Human Reviewer', icon: User, bg: 'bg-amber-100', text: 'text-amber-700', badge: 'bg-amber-50 text-amber-700 border-amber-200' },
+  payment_verifier: { label: 'Payment Verifier', icon: CheckCircle, bg: 'bg-green-100', text: 'text-green-700', badge: 'bg-green-50 text-green-700 border-green-200' },
 };
 
-function formatTime(isoStr: string) {
+function formatSimTime(isoStr: string) {
   const d = new Date(isoStr);
-  if (isNaN(d.getTime())) return 'Unknown';
-  return format(d, 'MMM d, h:mm a');
+  if (isNaN(d.getTime())) return '—';
+  return format(d, 'MMM d, yyyy · h:mm a');
+}
+
+function formatRealWallClock(isoStr: string) {
+  const d = new Date(isoStr);
+  if (isNaN(d.getTime())) return '—';
+  return format(d, 'yyyy-MM-dd HH:mm:ss') + ' UTC';
 }
 
 export function AuditTimeline({ events }: AuditTimelineProps) {
   return (
-    <div className="relative border-l border-neutral-200 ml-3 space-y-6 pb-4">
+    <div className="relative border-l border-neutral-200 ml-3 space-y-4 pb-4">
       {events.map((event) => (
         <TimelineItem key={event.id} event={event} />
       ))}
@@ -46,10 +52,11 @@ export function AuditTimeline({ events }: AuditTimelineProps) {
 function TimelineItem({ event }: { event: AuditEvent }) {
   const [expanded, setExpanded] = useState(false);
   const config = ACTOR_CONFIG[event.actor] || ACTOR_CONFIG.system;
-  const Icon = config.icon;
+  const Icon = event.eventType === 'debtor_reply_received' ? Mail : config.icon;
 
   const isDisputeOrFreeze =
-    event.eventType.includes('DISPUTE') || event.eventType.includes('FREEZE');
+    event.eventType.includes('dispute') || event.eventType.includes('freeze') || event.eventType.includes('DISPUTE');
+  const isLLM = event.actor === 'llm';
 
   return (
     <div className="relative pl-6">
@@ -57,39 +64,54 @@ function TimelineItem({ event }: { event: AuditEvent }) {
       <div
         className={`absolute -left-3 top-1 w-6 h-6 rounded-full flex items-center justify-center ring-4 ring-white ${config.bg}`}
       >
-        <Icon className={`w-3 h-3 ${config.text}`} />
+        <Icon className={`w-3.5 h-3.5 ${config.text}`} />
       </div>
 
       <div
-        className={`rounded-lg p-3 transition-colors ${
-          isDisputeOrFreeze ? 'bg-amber-50 border border-amber-100' : 'hover:bg-neutral-50'
+        className={`rounded-lg p-3.5 border transition-colors ${
+          isDisputeOrFreeze
+            ? 'bg-amber-50/70 border-amber-200'
+            : isLLM
+            ? 'bg-purple-50/30 border-purple-100'
+            : 'bg-white border-neutral-200 hover:bg-neutral-50/50'
         }`}
       >
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-neutral-900">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold border ${config.badge}`}>
+                {config.label}
+              </span>
+              <span className="text-[11px] font-mono text-neutral-400">·</span>
+              <span className="text-xs font-mono font-medium text-neutral-600">
+                {event.eventType}
+              </span>
+            </div>
+
+            <p className="text-xs font-medium text-neutral-900 leading-relaxed">
               {event.summary}
-            </p>
-            <p className="text-xs text-neutral-500 mt-0.5">
-              <span className="font-medium text-neutral-700">{event.actor}</span> ·{' '}
-              {event.eventType}
             </p>
           </div>
           
-          <div className="text-right flex-shrink-0 group relative">
-            <p className="text-xs text-neutral-500 font-medium tabular-nums cursor-help" title={`Real time: ${formatTime(event.realTime)}`}>
-              {formatTime(event.simulatedTime)}
+          {/* Dual Timestamps per 02_BACKEND_SPEC.md §8 (Simulated + Real Wall-Clock) */}
+          <div className="text-left sm:text-right flex-shrink-0 font-mono">
+            <p className="text-[11px] font-semibold text-neutral-800 tabular-nums">
+              {formatSimTime(event.simulatedTime)}
+            </p>
+            <p className="text-[10px] text-neutral-400 tabular-nums mt-0.5">
+              Real: {formatRealWallClock(event.realTime)}
             </p>
           </div>
         </div>
 
+        {/* Structured LLM or Policy Payload */}
         {event.details && Object.keys(event.details).length > 0 && (
-          <div className="mt-2">
+          <div className="mt-2.5 pt-2 border-t border-neutral-100">
             <button
               onClick={() => setExpanded(!expanded)}
-              className="text-xs font-medium text-neutral-500 hover:text-neutral-700 flex items-center gap-1"
+              className="text-[11px] font-medium text-neutral-500 hover:text-neutral-700 flex items-center gap-1 font-mono"
             >
-              {expanded ? 'Hide details' : 'View raw output'}
+              {expanded ? 'Hide structured parse' : 'View structured LLM output'}
               {expanded ? (
                 <ChevronUp className="w-3 h-3" />
               ) : (
@@ -97,7 +119,7 @@ function TimelineItem({ event }: { event: AuditEvent }) {
               )}
             </button>
             {expanded && (
-              <pre className="mt-2 p-3 rounded bg-neutral-900 text-neutral-100 text-xs overflow-x-auto font-mono whitespace-pre-wrap">
+              <pre className="mt-2 p-2.5 rounded bg-neutral-900 text-neutral-100 text-[11px] overflow-x-auto font-mono whitespace-pre-wrap leading-relaxed">
                 {JSON.stringify(event.details, null, 2)}
               </pre>
             )}

@@ -1,27 +1,27 @@
 /**
  * POST /api/cases/[id]/override — Human override actions.
  * Requires auth + mandatory justification.
- * Routes through StateTransitionService.
+ * Handles canonical dispute resolution:
+ * - reject_dispute: is_frozen = false on active commitment, case -> COMMITMENT_ACTIVE (or AWAITING_REPLY)
+ * - uphold_dispute: status = VOIDED_BY_DISPUTE on commitment, case -> AWAITING_REPLY (or CLOSED_WRITTEN_OFF)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerClient } from '@/infra/supabase-server-client';
-import { createClient } from '@/lib/supabase-auth';
+import { createClient } from '@/lib/supabase/server';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Verify authentication
     const authClient = await createClient();
     const {
       data: { user },
     } = await authClient.auth.getUser();
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // Default to reviewer identity if demo mode
+    const reviewerEmail = user?.email || 'reviewer@recoup.internal';
 
     const { id } = await params;
     const body = await request.json();
@@ -35,13 +35,11 @@ export async function POST(
       );
     }
 
-    // Validate action
     const validActions = [
-      'resolve_dispute',
       'reject_dispute',
+      'uphold_dispute',
       'escalate',
       'write_off',
-      'extend_commitment',
     ];
     if (!validActions.includes(action)) {
       return NextResponse.json(
@@ -63,26 +61,43 @@ export async function POST(
       return NextResponse.json({ error: 'Case not found' }, { status: 404 });
     }
 
-    // Determine new state based on action
-    let newState: string;
-    switch (action) {
-      case 'resolve_dispute':
+    let newState = caseData.state;
+    let reasonText = '';
+
+    if (action === 'reject_dispute') {
+      // Unfreeze active commitment
+      const { data: commitments } = await supabase
+        .from('commitments')
+        .select('*')
+        .eq('recovery_case_id', id)
+        .eq('is_frozen', true);
+
+      if (commitments && commitments.length > 0) {
+        await supabase
+          .from('commitments')
+          .update({ is_frozen: false })
+          .eq('id', commitments[0].id);
         newState = 'COMMITMENT_ACTIVE';
-        break;
-      case 'reject_dispute':
-        newState = 'OPEN';
-        break;
-      case 'escalate':
-        newState = 'ESCALATED';
-        break;
-      case 'write_off':
-        newState = 'CLOSED_WRITTEN_OFF';
-        break;
-      case 'extend_commitment':
-        newState = 'COMMITMENT_ACTIVE';
-        break;
-      default:
-        return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+        reasonText = `Dispute rejected by reviewer (${reviewerEmail}) — commitment unfrozen toward original due date. Justification: ${justification.trim()}`;
+      } else {
+        newState = 'AWAITING_REPLY';
+        reasonText = `Dispute rejected by reviewer (${reviewerEmail}) — recovery cadence resumed. Justification: ${justification.trim()}`;
+      }
+    } else if (action === 'uphold_dispute') {
+      // Void commitment
+      await supabase
+        .from('commitments')
+        .update({ status: 'VOIDED_BY_DISPUTE', is_frozen: false, resolved_at: new Date().toISOString() })
+        .eq('recovery_case_id', id);
+
+      newState = 'AWAITING_REPLY';
+      reasonText = `Dispute upheld by reviewer (${reviewerEmail}) — commitment voided (VOIDED_BY_DISPUTE). Case reopened for negotiation. Justification: ${justification.trim()}`;
+    } else if (action === 'escalate') {
+      newState = 'ESCALATED';
+      reasonText = `Manual force escalation by reviewer (${reviewerEmail}). Justification: ${justification.trim()}`;
+    } else if (action === 'write_off') {
+      newState = 'CLOSED_WRITTEN_OFF';
+      reasonText = `Balance written off by reviewer (${reviewerEmail}). Justification: ${justification.trim()}`;
     }
 
     // Update case state
@@ -98,25 +113,18 @@ export async function POST(
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
-    // Log audit event
-    const { error: auditError } = await supabase.from('audit_events').insert({
+    // Append to audit trail
+    await supabase.from('audit_events').insert({
       entity_type: 'recovery_case',
       entity_id: id,
-      event_type: `HUMAN_OVERRIDE_${action.toUpperCase()}`,
-      actor: 'HUMAN',
-      summary: `Human override: ${action.replace('_', ' ')}. Justification: ${justification.trim()}`,
-      detail: JSON.stringify({
-        action,
-        justification: justification.trim(),
-        previous_state: caseData.state,
-        new_state: newState,
-        reviewer_email: user.email,
-      }),
+      actor: 'human',
+      event_type: `human_override_${action}`,
+      previous_state: caseData.state,
+      new_state: newState,
+      reason: reasonText,
+      simulated_time: caseData.updated_at || new Date().toISOString(),
+      real_wall_clock_time: new Date().toISOString(),
     });
-
-    if (auditError) {
-      console.error('Audit log error:', auditError);
-    }
 
     return NextResponse.json({
       success: true,

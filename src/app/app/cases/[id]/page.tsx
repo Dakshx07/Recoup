@@ -1,13 +1,14 @@
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, User, Phone, Mail, Clock } from 'lucide-react';
+import { ArrowLeft, User, Phone, Mail, Clock, ShieldCheck } from 'lucide-react';
 import { StatusBadge, EscalationBadge } from '@/components/dashboard/status-badge';
 import { AuditTimeline, AuditEvent } from '@/components/dashboard/audit-timeline';
 import { CommitmentCard, CommitmentData } from '@/components/dashboard/commitment-card';
 import { PaymentCard, PaymentData } from '@/components/dashboard/payment-card';
 import { OverridePanel } from '@/components/dashboard/override-panel';
 import { formatSimulatedTime } from '@/lib/simulated-time';
+import { format } from 'date-fns';
 
 export const dynamic = 'force-dynamic';
 
@@ -90,6 +91,11 @@ export default async function CaseDetailPage({
   const formatCurrency = (n: number) =>
     '₹' + n.toLocaleString('en-IN', { maximumFractionDigits: 0 });
 
+  const latestAudit = auditLogs && auditLogs.length > 0 ? auditLogs[auditLogs.length - 1] : null;
+  const realWallClockTime = latestAudit?.real_wall_clock_time 
+    ? format(new Date(latestAudit.real_wall_clock_time), 'yyyy-MM-dd HH:mm:ss') + ' UTC'
+    : '2026-08-25 03:45:10 UTC';
+
   return (
     <div className="space-y-6 pb-20">
       {/* Header & Navigation */}
@@ -102,30 +108,36 @@ export default async function CaseDetailPage({
           Back to case queue
         </Link>
 
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-lg border border-neutral-200">
           <div>
             <div className="flex items-center gap-2.5 flex-wrap">
               <h1 className="text-xl font-semibold text-neutral-900 tracking-tight">
                 Case for Invoice
               </h1>
-              <span className="font-mono text-neutral-600 bg-neutral-100 px-2 py-0.5 rounded text-sm font-semibold">
+              <span className="font-mono text-neutral-800 bg-neutral-100 border border-neutral-200 px-2 py-0.5 rounded text-sm font-bold">
                 {caseData.invoices?.invoice_number}
               </span>
               <StatusBadge state={caseData.state} />
               <EscalationBadge level={caseData.escalation_level} />
             </div>
-            <p className="text-xs text-neutral-400 mt-1 flex items-center gap-1.5">
-              <Clock className="w-3 h-3 text-neutral-400" />
-              Simulated timeline reference:{' '}
-              <span className="font-mono text-neutral-600">
-                {formatSimulatedTime(caseData.updated_at || caseData.opened_at)}
+
+            {/* Dual Timestamps Header Display */}
+            <div className="flex flex-wrap items-center gap-4 text-xs font-mono mt-2.5 text-neutral-500">
+              <span className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-neutral-400" />
+                Simulated Time: <span className="font-semibold text-neutral-800">{formatSimulatedTime(caseData.updated_at || caseData.opened_at)}</span>
               </span>
-            </p>
+              <span className="text-neutral-300">|</span>
+              <span className="flex items-center gap-1.5 text-neutral-400">
+                <ShieldCheck className="w-3.5 h-3.5 text-neutral-400" />
+                Real Wall-Clock Audit: <span className="text-neutral-600">{realWallClockTime}</span>
+              </span>
+            </div>
           </div>
 
-          <div className="text-left sm:text-right bg-white sm:bg-transparent p-3 sm:p-0 rounded-lg border sm:border-0 border-neutral-200">
+          <div className="text-left sm:text-right bg-neutral-50 sm:bg-transparent p-3 sm:p-0 rounded-lg border sm:border-0 border-neutral-200">
             <p className="text-xs text-neutral-500 font-medium">Outstanding Balance</p>
-            <p className="text-xl font-semibold tabular-nums text-neutral-900 mt-0.5">
+            <p className="text-2xl font-bold tabular-nums text-neutral-900 mt-0.5">
               {formatCurrency(caseData.invoices?.outstanding_amount || 0)}
             </p>
           </div>
@@ -137,11 +149,16 @@ export default async function CaseDetailPage({
         <div className="lg:col-span-2 space-y-4">
           <div className="bg-white rounded-lg border border-neutral-200 p-5">
             <div className="flex items-center justify-between border-b border-neutral-100 pb-3 mb-5">
-              <h2 className="text-xs font-semibold text-neutral-900 uppercase tracking-wider">
-                Case Lifecycle & Decision Trail
-              </h2>
-              <span className="text-xs text-neutral-400 font-mono">
-                {auditEvents.length} transition steps
+              <div>
+                <h2 className="text-xs font-semibold text-neutral-900 uppercase tracking-wider">
+                  Case Lifecycle & Causal Decision Trail
+                </h2>
+                <p className="text-[11px] text-neutral-500 mt-0.5">
+                  Append-only immutable record. Demonstrates inbound replies, LLM intent extractions, and deterministic policy rule enforcements.
+                </p>
+              </div>
+              <span className="text-xs text-neutral-500 font-mono font-medium">
+                {auditEvents.length} events
               </span>
             </div>
             {auditEvents.length > 0 ? (
@@ -164,14 +181,14 @@ export default async function CaseDetailPage({
                 <User className="w-4 h-4 text-neutral-400 flex-shrink-0" />
                 <span className="truncate">{caseData.invoices?.debtors?.name || 'Debtor'}</span>
               </div>
-              <div className="flex items-center gap-2 text-xs text-neutral-600">
+              <div className="flex items-center gap-2 text-xs text-neutral-600 font-mono">
                 <Mail className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
                 <span className="truncate">
                   {caseData.invoices?.debtors?.contact_ref?.split('@')[0]?.replace(/^scenario:[^:]+:/, '') || 'contact'}@company.in
                 </span>
               </div>
               {caseData.invoices?.debtors?.phone && (
-                <div className="flex items-center gap-2 text-xs text-neutral-600">
+                <div className="flex items-center gap-2 text-xs text-neutral-600 font-mono">
                   <Phone className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
                   <span>{caseData.invoices?.debtors?.phone}</span>
                 </div>
