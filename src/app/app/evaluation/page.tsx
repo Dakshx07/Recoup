@@ -11,22 +11,21 @@ export default async function EvaluationPage({
   const { tab = 'metrics' } = await searchParams;
   const supabase = await createClient();
 
-  // 1. Fetch real evaluation data from database
-  const { data: cases } = await supabase.from('recovery_cases').select(`
-    id, state, escalation_level,
-    invoices ( original_amount, outstanding_amount )
-  `);
+  // Parallelize all evaluation data queries concurrently
+  const [casesRes, commitmentsRes, paymentsRes, replyParsesRes] = await Promise.all([
+    supabase.from('recovery_cases').select(`
+      id, state, escalation_level,
+      invoices ( original_amount, outstanding_amount )
+    `),
+    supabase.from('commitments').select('*'),
+    supabase.from('payments').select('*'),
+    supabase.from('reply_parses').select('*').order('created_at', { ascending: false }),
+  ]);
 
-  const { data: commitments } = await supabase.from('commitments').select('*');
-  const { data: payments } = await supabase.from('payments').select('*');
-  const { data: replyParses } = await supabase.from('reply_parses').select('*').order('created_at', { ascending: false });
-  const { data: auditEvents } = await supabase.from('audit_events').select('*');
-
-  const allCases = cases || [];
-  const allCommitments = commitments || [];
-  const allPayments = payments || [];
-  const allParses = replyParses || [];
-  const allAudits = auditEvents || [];
+  const allCases = casesRes.data || [];
+  const allCommitments = commitmentsRes.data || [];
+  const allPayments = paymentsRes.data || [];
+  const allParses = replyParsesRes.data || [];
 
   // Financial aggregates
   let totalInvoiced = 0;

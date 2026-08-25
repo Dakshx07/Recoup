@@ -21,16 +21,6 @@ export default async function AuditPage({
   const { actor, event_type, search } = await searchParams;
   const supabase = await createClient();
 
-  // 1. Fetch current simulated time from most recent audit event
-  const { data: latestAudit } = await supabase
-    .from('audit_events')
-    .select('simulated_time')
-    .order('simulated_time', { ascending: false })
-    .limit(1)
-    .single();
-
-  const simulatedNow = latestAudit?.simulated_time || new Date().toISOString();
-
   let query = supabase
     .from('audit_events')
     .select('*')
@@ -47,8 +37,19 @@ export default async function AuditPage({
     query = query.or(`reason.ilike.%${search}%,event_type.ilike.%${search}%`);
   }
 
-  const { data: logs } = await query;
-  const events = logs || [];
+  // Parallelize latest simulated clock query and filtered audit events query
+  const [latestAuditRes, logsRes] = await Promise.all([
+    supabase
+      .from('audit_events')
+      .select('simulated_time')
+      .order('simulated_time', { ascending: false })
+      .limit(1)
+      .single(),
+    query,
+  ]);
+
+  const simulatedNow = latestAuditRes.data?.simulated_time || new Date().toISOString();
+  const events = logsRes.data || [];
 
   return (
     <div className="space-y-6 pb-12">

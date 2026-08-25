@@ -10,38 +10,52 @@ export const dynamic = 'force-dynamic';
 export default async function OverviewPage() {
   const supabase = await createClient();
 
-  // 1. Fetch current simulated time from the latest audit event
-  const { data: latestAudit } = await supabase
-    .from('audit_events')
-    .select('simulated_time')
-    .order('simulated_time', { ascending: false })
-    .limit(1)
-    .single();
-
-  const simulatedNow = latestAudit?.simulated_time || new Date().toISOString();
-
-  // 2. Fetch top cases needing attention (Disputed, Ghosted, Escalated)
-  const { data: attentionCases } = await supabase
-    .from('recovery_cases')
-    .select(`
-      id,
-      state,
-      escalation_level,
-      updated_at,
-      opened_at,
-      invoices (
-        invoice_number,
-        outstanding_amount,
-        debtors (
-          name
+  // Execute all independent overview queries concurrently in parallel
+  const [latestAuditRes, attentionCasesRes, recentLogsRes, allStatsRes, allPaymentsRes] =
+    await Promise.all([
+      supabase
+        .from('audit_events')
+        .select('simulated_time')
+        .order('simulated_time', { ascending: false })
+        .limit(1)
+        .single(),
+      supabase
+        .from('recovery_cases')
+        .select(`
+          id,
+          state,
+          escalation_level,
+          updated_at,
+          opened_at,
+          invoices (
+            invoice_number,
+            outstanding_amount,
+            debtors (
+              name
+            )
+          )
+        `)
+        .in('state', ['DISPUTE_OPEN', 'GHOSTED', 'ESCALATED'])
+        .order('updated_at', { ascending: false })
+        .limit(5),
+      supabase
+        .from('audit_events')
+        .select('*')
+        .order('simulated_time', { ascending: false })
+        .limit(6),
+      supabase.from('recovery_cases').select(`
+        state,
+        invoices (
+          outstanding_amount,
+          original_amount
         )
-      )
-    `)
-    .in('state', ['DISPUTE_OPEN', 'GHOSTED', 'ESCALATED'])
-    .order('updated_at', { ascending: false })
-    .limit(5);
+      `),
+      supabase.from('payments').select('amount'),
+    ]);
 
-  const mappedAttentionCases: CaseRowData[] = (attentionCases || []).map((row: any) => ({
+  const simulatedNow = latestAuditRes.data?.simulated_time || new Date().toISOString();
+
+  const mappedAttentionCases: CaseRowData[] = (attentionCasesRes.data || []).map((row: any) => ({
     id: row.id,
     invoiceNumber: row.invoices?.invoice_number || 'INV-0000',
     debtorName: row.invoices?.debtors?.name || 'Debtor',
@@ -51,14 +65,7 @@ export default async function OverviewPage() {
     lastActivityAt: row.updated_at || row.opened_at,
   }));
 
-  // 3. Fetch global recent audit events (ordered by simulated_time)
-  const { data: recentLogs } = await supabase
-    .from('audit_events')
-    .select('*')
-    .order('simulated_time', { ascending: false })
-    .limit(6);
-
-  const auditEvents: AuditEvent[] = (recentLogs || []).map((log) => ({
+  const auditEvents: AuditEvent[] = (recentLogsRes.data || []).map((log) => ({
     id: String(log.id),
     actor: log.actor,
     eventType: log.event_type,
@@ -68,24 +75,16 @@ export default async function OverviewPage() {
     realTime: log.real_wall_clock_time,
   }));
 
-  // 4. Fetch live metrics from database
-  const { data: allStats } = await supabase.from('recovery_cases').select(`
-    state,
-    invoices (
-      outstanding_amount,
-      original_amount
-    )
-  `);
-
-  const { data: allPayments } = await supabase.from('payments').select('amount');
-  const recovered = (allPayments || []).reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  // Financial aggregates
+  const allPayments = allPaymentsRes.data || [];
+  const recovered = allPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
 
   let atRisk = 0;
   let activeCases = 0;
   let escalated = 0;
   let totalAmount = 0;
 
-  (allStats || []).forEach((row: any) => {
+  (allStatsRes.data || []).forEach((row: any) => {
     const orig = row.invoices?.original_amount || 0;
     const out = row.invoices?.outstanding_amount || 0;
     totalAmount += orig;

@@ -13,18 +13,8 @@ export default async function CasesPage({
   const supabase = await createClient();
   const { tab = 'attention' } = await searchParams;
 
-  // 1. Get current simulated time from most recent audit event
-  const { data: latestAudit } = await supabase
-    .from('audit_events')
-    .select('simulated_time')
-    .order('simulated_time', { ascending: false })
-    .limit(1)
-    .single();
-
-  const simulatedNow = latestAudit?.simulated_time || new Date().toISOString();
-
-  // 2. Build the case query
-  let query = supabase
+  // Build the case query for the active tab
+  let caseQuery = supabase
     .from('recovery_cases')
     .select(`
       id,
@@ -44,14 +34,33 @@ export default async function CasesPage({
     .order('updated_at', { ascending: false });
 
   if (tab === 'attention') {
-    // Attention tab: Disputed, Ghosted, Escalated
-    query = query.in('state', ['DISPUTE_OPEN', 'GHOSTED', 'ESCALATED']);
+    caseQuery = caseQuery.in('state', ['DISPUTE_OPEN', 'GHOSTED', 'ESCALATED']);
   }
 
-  const { data, error } = await query;
+  // Parallelize all independent database queries
+  const [latestAuditRes, casesRes, allStatsRes, allPaymentsRes] = await Promise.all([
+    supabase
+      .from('audit_events')
+      .select('simulated_time')
+      .order('simulated_time', { ascending: false })
+      .limit(1)
+      .single(),
+    caseQuery,
+    supabase.from('recovery_cases').select(`
+      state,
+      invoices (
+        outstanding_amount,
+        original_amount
+      )
+    `),
+    supabase.from('payments').select('amount'),
+  ]);
 
-  if (error) {
-    console.error('Error fetching cases:', error);
+  const simulatedNow = latestAuditRes.data?.simulated_time || new Date().toISOString();
+  const data = casesRes.data;
+
+  if (casesRes.error) {
+    console.error('Error fetching cases:', casesRes.error);
   }
 
   // Map to UI representation
@@ -65,24 +74,16 @@ export default async function CasesPage({
     lastActivityAt: row.updated_at || row.opened_at,
   }));
 
-  // Fetch portfolio stats for the metric strip
-  const { data: allStats } = await supabase.from('recovery_cases').select(`
-    state,
-    invoices (
-      outstanding_amount,
-      original_amount
-    )
-  `);
-
-  const { data: allPayments } = await supabase.from('payments').select('amount');
-  const recovered = (allPayments || []).reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  // Aggregate portfolio metrics
+  const allPayments = allPaymentsRes.data || [];
+  const recovered = allPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
 
   let atRisk = 0;
   let activeCases = 0;
   let escalated = 0;
   let totalAmount = 0;
 
-  (allStats || []).forEach((row: any) => {
+  (allStatsRes.data || []).forEach((row: any) => {
     const orig = row.invoices?.original_amount || 0;
     const out = row.invoices?.outstanding_amount || 0;
     totalAmount += orig;

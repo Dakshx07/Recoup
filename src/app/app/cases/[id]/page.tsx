@@ -20,6 +20,7 @@ export default async function CaseDetailPage({
   const supabase = await createClient();
   const { id: caseId } = await params;
 
+  // 1. Fetch case details with invoice & debtor relationships
   const { data: caseData, error } = await supabase
     .from('recovery_cases')
     .select(`
@@ -36,26 +37,28 @@ export default async function CaseDetailPage({
     notFound();
   }
 
-  // Fetch commitments
-  const { data: commitments } = await supabase
-    .from('commitments')
-    .select('*')
-    .eq('recovery_case_id', caseId)
-    .order('created_at', { ascending: false });
+  // 2. Fetch commitments, payments, and audit logs concurrently in parallel
+  const [commitmentsRes, paymentsRes, auditLogsRes] = await Promise.all([
+    supabase
+      .from('commitments')
+      .select('*')
+      .eq('recovery_case_id', caseId)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('payments')
+      .select('*')
+      .eq('invoice_id', caseData.invoice_id)
+      .order('paid_at', { ascending: false }),
+    supabase
+      .from('audit_events')
+      .select('*')
+      .eq('entity_id', caseId)
+      .order('simulated_time', { ascending: true }),
+  ]);
 
-  // Fetch payments for this invoice (using invoice_id)
-  const { data: payments } = await supabase
-    .from('payments')
-    .select('*')
-    .eq('invoice_id', caseData.invoice_id)
-    .order('paid_at', { ascending: false });
-
-  // Fetch audit events in chronological order
-  const { data: auditLogs } = await supabase
-    .from('audit_events')
-    .select('*')
-    .eq('entity_id', caseId)
-    .order('simulated_time', { ascending: true });
+  const commitments = commitmentsRes.data;
+  const payments = paymentsRes.data;
+  const auditLogs = auditLogsRes.data;
 
   const latestAudit = auditLogs && auditLogs.length > 0 ? auditLogs[auditLogs.length - 1] : null;
 
