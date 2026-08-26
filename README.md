@@ -127,15 +127,15 @@ Every row in `audit_events` carries two distinct timestamps ([docs/ARCHITECTURE.
 
 Recoup is evaluated against a synthetic benchmark of **200 realistic enterprise invoices** across 8 distinct behavioral scenarios ([docs/EVALUATION.md](docs/EVALUATION.md)):
 
-| Metric | Recoup Agent | Static 3-Touch Baseline | Impact |
-|---|---|---|---|
-| **Portfolio Recovery Rate** | **68.4%** | 42.0% | **+26.4-point lift** |
-| **Dispute Freeze Correctness** | **100.0%** | 0.0% | **Zero wrongful cancellations** |
-| **Promise-Kept Rate** | **91.7%** | — | **55 of 60 promises settled on time** |
-| **LLM Hallucination Rate** | **0.0%** | — | **Strict schema validation constraint** |
-| **Classification Accuracy** | **98.2%** | — | **Evaluated against synthetic ground truth** |
-
-*Note: Includes 1 realistic, explained imperfection where late webhook reconciliation occurs for broken promises (93.3% / 28 of 30 on schedule).*
+| Metric | Measured Value | Verification Source | Status |
+|---|:---:|---|:---:|
+| **Total Invoiced Book** | **₹1,24,77,150** | Raw PostgreSQL aggregation ($N = 200$) | `MEASURED` |
+| **Capital Recovered** | **₹50,05,977** | $\sum(\text{original} - \text{outstanding})$ | `MEASURED` |
+| **Portfolio Recovery Rate** | **40.12%** | 80 of 200 cases settled in full/partial | `MEASURED` |
+| **Clean Promise Honor Rate** | **100.0%** | 60 of 60 clean promises settled on schedule | `MEASURED` |
+| **Resolved Promise Honor Rate** | **70.0%** | 70 of 100 resolved promises kept/partial | `MEASURED` |
+| **Dispute-Freeze Adherence** | **100.0%** | 18 active promises frozen, 0 wrongfully cancelled | `MEASURED` |
+| **LLM Strict Schema Validity** | **100.0%** | 180 of 180 parses conform to Zod schema | `MEASURED` |
 
 ---
 
@@ -236,13 +236,13 @@ npm run typecheck   # Strict TypeScript static analysis
 ## 10. Recommended Demo Flow
 
 1. **Landing Page (`/`)**: Inspect the high-craft convergence artwork, Fraunces serif typography, 5-stage lifecycle, and 2-panel AI boundary.
-2. **Operations Console (`/app`)**: Review the 4-metric strip (+26.4% lift) and the Needs Attention priority table.
+2. **Operations Console (`/app`)**: Review the 4-metric strip (₹50.06L recovered, ₹74.71L at risk) and the Needs Attention priority table.
 3. **Case Detail (`/app/cases/[id]`)**: Open Case **`INV-2101`** (*Olive Trading*):
    - Review the **7-step causal audit trail** (`case_opened` &rarr; `debtor_reply_received` &rarr; `reply_parsed` &rarr; `commitment_validated` &rarr; `dispute_detected_commitment_frozen`).
    - Inspect the **Frozen Commitment Card** showing ₹42,000 due Jan 10 (`due in 5 days`).
    - Test the **Dispute Override Panel**: select *"Reject dispute — resume commitment"* or *"Uphold dispute — void commitment"*, enter justification, and confirm execution.
    - Observe the instant atomic state update and the newly appended immutable audit record.
-4. **Evaluation Benchmark (`/app/evaluation`)**: Inspect the 68.4% vs 42.0% recovery comparison and live Model Activity logs.
+4. **Evaluation Benchmark (`/app/evaluation`)**: Inspect the live PostgreSQL benchmark metrics, 8-scenario dynamic breakdown, and live Model Activity logs.
 5. **Policy Engine (`/app/policy`)**: Review the 13 locked business rules imported directly from `config.ts`.
 6. **Clock Simulator (`/app/simulation`)**: Advance the authoritative clock by +1, +3, or +7 days to trigger batch lifecycle evaluations.
 

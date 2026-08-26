@@ -11,8 +11,8 @@ All notable changes to the Recoup platform are documented here.
 - **Double-Submit Protection**: Verified that rapid duplicate clicks produce exactly one state transition, one commitment mutation, and one immutable audit event.
 - **Dual-Timestamp Engine**: Scoped simulated relative time calculations strictly to case-level business clocks while preserving real UTC wall-clock audit timestamps.
 - **Operations Console**: Built Blade-styled Recovery Dashboard with 4-metric strip, Needs Attention queue, and case detail pages.
-- **Evaluation Benchmark**: Completed 200-case synthetic evaluation suite showing **68.4%** autonomous recovery vs **42.0%** static baseline (**+26.4-point lift**).
-- **Automated Test Suite**: 166 Vitest unit/policy tests passing with 0 TypeScript compilation errors.
+- **Evaluation Benchmark**: Completed 200-case empirical evaluation suite showing **40.12%** autonomous recovery (₹50,05,977 recovered across ₹1,24,77,150 book), 100% clean promise honor, and 100% dispute freeze adherence.
+- **Automated Test Suite**: 171 Vitest unit/policy tests passing with 0 TypeScript compilation errors.
 
 ---
 

@@ -76,18 +76,17 @@ export default async function OverviewPage() {
   }));
 
   // Financial aggregates
-  const allPayments = allPaymentsRes.data || [];
-  const recovered = allPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
-
   let atRisk = 0;
   let activeCases = 0;
   let escalated = 0;
   let totalAmount = 0;
+  let totalOutstanding = 0;
 
   (allStatsRes.data || []).forEach((row: any) => {
-    const orig = row.invoices?.original_amount || 0;
-    const out = row.invoices?.outstanding_amount || 0;
+    const orig = Number(row.invoices?.original_amount) || 0;
+    const out = Number(row.invoices?.outstanding_amount) || 0;
     totalAmount += orig;
+    totalOutstanding += out;
 
     if (row.state === 'ESCALATED') {
       escalated++;
@@ -101,6 +100,8 @@ export default async function OverviewPage() {
       atRisk += out;
     }
   });
+
+  const recovered = Math.max(0, totalAmount - totalOutstanding);
 
   return (
     <div className="space-y-6 pb-12">

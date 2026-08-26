@@ -79,7 +79,7 @@ npm run typecheck
 - Inspect the 5-Stage Lifecycle Arc and the 2-Panel AI Boundary comparison.
 
 ### Step 2: Operations Console Overview (`/app`)
-- Observe the **4-metric strip** showing ₹5.84M recovered (**68.4%** vs **42.0%** baseline).
+- Observe the **4-metric strip** showing ₹50.06L recovered (40.12% recovery rate across ₹1.24 Cr book).
 - Inspect the **Needs Attention** queue prioritizing disputed and broken promise cases.
 
 ### Step 3: Deep Dive into Dispute Freeze (Case `INV-2101`)

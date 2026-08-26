@@ -1,200 +1,82 @@
 /**
- * GET /api/evaluation — Compute and return evaluation metrics.
+ * GET /api/evaluation — Compute and return evaluation metrics derived strictly from PostgreSQL.
  */
 
 import { NextResponse } from 'next/server';
 import { getServerClient } from '@/infra/supabase-server-client';
+import { calculateBenchmarkMetrics } from '@/lib/evaluation/benchmark';
 
 export async function GET() {
   try {
     const supabase = getServerClient();
 
-    // Fetch all cases with invoices
-    const { data: cases, error: casesError } = await supabase
-      .from('recovery_cases')
-      .select('*, invoices(*)');
+    // Query raw tables concurrently
+    const [casesRes, commitmentsRes, paymentsRes, replyParsesRes, auditEventsRes] = await Promise.all([
+      supabase.from('recovery_cases').select(`
+        id, state, escalation_level, opened_at, updated_at, closed_at, closure_reason,
+        invoices (
+          id, invoice_number, original_amount, outstanding_amount, status,
+          debtors ( id, name, contact_ref )
+        )
+      `),
+      supabase.from('commitments').select('*'),
+      supabase.from('payments').select('*'),
+      supabase.from('reply_parses').select('*').order('created_at', { ascending: false }),
+      supabase.from('audit_events').select('*'),
+    ]);
 
-    if (casesError) {
-      return NextResponse.json({ error: casesError.message }, { status: 500 });
+    if (casesRes.error) {
+      return NextResponse.json({ error: casesRes.error.message }, { status: 500 });
     }
 
-    // Fetch all commitments
-    const { data: commitments } = await supabase
-      .from('commitments')
-      .select('*');
+    const cases = casesRes.data || [];
+    const commitments = commitmentsRes.data || [];
+    const payments = paymentsRes.data || [];
+    const replyParses = replyParsesRes.data || [];
+    const auditEvents = auditEventsRes.data || [];
 
-    // Fetch all payments
-    const { data: payments } = await supabase
-      .from('payments')
-      .select('*');
-
-    // Fetch all reply parses
-    const { data: replyParses } = await supabase
-      .from('reply_parses')
-      .select('*');
-
-    // Fetch all audit events for override count
-    const { data: auditEvents } = await supabase
-      .from('audit_events')
-      .select('*')
-      .like('event_type', 'HUMAN_OVERRIDE%');
-
-    const allCases = cases ?? [];
-    const allCommitments = commitments ?? [];
-    const allPayments = payments ?? [];
-    const allParses = replyParses ?? [];
-
-    // Calculate metrics
-    const totalAmount = allCases.reduce(
-      (sum, c) => sum + (c.invoices?.amount ?? 0),
-      0
-    );
-
-    const recoveredAmount = allPayments.reduce(
-      (sum, p) => sum + (p.amount ?? 0),
-      0
-    );
-
-    const recoveryRate =
-      totalAmount > 0 ? (recoveredAmount / totalAmount) * 100 : 0;
-
-    // Promise-kept rate
-    const keptCommitments = allCommitments.filter(
-      (c) => c.status === 'KEPT'
-    ).length;
-    const totalCommitments = allCommitments.filter(
-      (c) => c.status !== 'PENDING'
-    ).length;
-    const promiseKeptRate =
-      totalCommitments > 0 ? (keptCommitments / totalCommitments) * 100 : 0;
-
-    // False escalation rate
-    const escalatedCases = allCases.filter(
-      (c) => c.state === 'ESCALATED'
-    );
-    const falseEscalations = escalatedCases.filter((c) => {
-      const casePayments = allPayments.filter(
-        (p) => p.case_id === c.id
-      );
-      return casePayments.length > 0;
+    const metrics = calculateBenchmarkMetrics({
+      cases,
+      commitments,
+      payments,
+      replyParses,
+      auditEvents,
     });
-    const falseEscalationRate =
-      escalatedCases.length > 0
-        ? (falseEscalations.length / escalatedCases.length) * 100
-        : 0;
-
-    // Dispute handling correctness
-    const disputeCases = allCases.filter(
-      (c) =>
-        c.state === 'DISPUTE_OPEN' ||
-        allCommitments.some(
-          (cm) =>
-            cm.case_id === c.id &&
-            (cm.status === 'FROZEN' || cm.status === 'DISPUTE_FILED')
-        )
-    );
-    const correctlyHandled = disputeCases.filter((c) => {
-      const caseCommitments = allCommitments.filter(
-        (cm) => cm.case_id === c.id
-      );
-      // A dispute is correctly handled if commitments were frozen, not cancelled
-      return caseCommitments.some(
-        (cm) => cm.status === 'FROZEN' || cm.status === 'KEPT' || cm.status === 'BROKEN'
-      );
-    });
-    const disputeCorrectness =
-      disputeCases.length > 0
-        ? (correctlyHandled.length / disputeCases.length) * 100
-        : 100;
-
-    // Classification accuracy (based on reply parses)
-    const validParses = allParses.filter((p) => p.schema_valid);
-    const classificationAccuracy =
-      allParses.length > 0
-        ? (validParses.length / allParses.length) * 100
-        : 100;
-
-    // Hallucination rate
-    const invalidParses = allParses.filter((p) => !p.schema_valid);
-    const hallucinationRate =
-      allParses.length > 0
-        ? (invalidParses.length / allParses.length) * 100
-        : 0;
-
-    // Human override rate
-    const overrideCount = auditEvents?.length ?? 0;
-    const humanOverrideRate =
-      allCases.length > 0 ? (overrideCount / allCases.length) * 100 : 0;
-
-    // Scenario breakdown
-    const scenarios = [
-      {
-        name: 'Clean promise, kept on time',
-        count: allCases.filter((c) => c.state === 'CLOSED_PAID').length,
-        total: Math.round(allCases.length * 0.3),
-      },
-      {
-        name: 'Broken promise, no dispute',
-        count: allCommitments.filter((c) => c.status === 'BROKEN').length,
-        total: Math.round(allCases.length * 0.15),
-      },
-      {
-        name: 'Promise, then dispute',
-        count: disputeCases.length,
-        total: Math.round(allCases.length * 0.1),
-      },
-      {
-        name: 'Direct dispute',
-        count: allCases.filter(
-          (c) =>
-            c.state === 'DISPUTE_OPEN' &&
-            !allCommitments.some((cm) => cm.case_id === c.id)
-        ).length,
-        total: Math.round(allCases.length * 0.1),
-      },
-      {
-        name: 'Ghost (no reply)',
-        count: allCases.filter((c) => c.state === 'GHOSTED').length,
-        total: Math.round(allCases.length * 0.15),
-      },
-      {
-        name: 'Ambiguous reply',
-        count: allParses.filter((p) => p.intent === 'AMBIGUOUS').length,
-        total: Math.round(allCases.length * 0.1),
-      },
-      {
-        name: 'Partial payment',
-        count: allCases.filter((c) => c.state === 'CLOSED_PARTIAL').length,
-        total: Math.round(allCases.length * 0.05),
-      },
-      {
-        name: 'Unprompted direct payment',
-        count: allPayments.filter((p) => {
-          const relatedCase = allCases.find((c) => c.id === p.case_id);
-          return (
-            relatedCase &&
-            !allCommitments.some((cm) => cm.case_id === relatedCase.id)
-          );
-        }).length,
-        total: Math.round(allCases.length * 0.05),
-      },
-    ];
 
     return NextResponse.json({
+      success: true,
+      measured: true,
       metrics: {
-        recoveryRate: Number(recoveryRate.toFixed(1)),
-        recoveredAmount,
-        totalAmount,
-        promiseKeptRate: Number(promiseKeptRate.toFixed(1)),
-        falseEscalationRate: Number(falseEscalationRate.toFixed(1)),
-        disputeCorrectness: Number(disputeCorrectness.toFixed(1)),
-        classificationAccuracy: Number(classificationAccuracy.toFixed(1)),
-        hallucinationRate: Number(hallucinationRate.toFixed(1)),
-        humanOverrideRate: Number(humanOverrideRate.toFixed(1)),
+        totalInvoiced: metrics.financials.totalInvoiced,
+        totalRecovered: metrics.financials.totalRecovered,
+        totalOutstanding: metrics.financials.totalOutstanding,
+        recoveryRate: Number(metrics.financials.recoveryRate.toFixed(2)),
+        totalCases: metrics.portfolio.totalCases,
+        settledCases: metrics.portfolio.settledCases,
+        settlementRate: Number(metrics.portfolio.settlementRate.toFixed(2)),
+        resolvedPromiseHonorRate: metrics.commitments.resolvedPromiseHonorRate !== null
+          ? Number(metrics.commitments.resolvedPromiseHonorRate.toFixed(2))
+          : null,
+        cleanPromiseHonorRate: metrics.commitments.cleanPromiseHonorRate !== null
+          ? Number(metrics.commitments.cleanPromiseHonorRate.toFixed(2))
+          : null,
+        disputeFreezeAdherenceRate: metrics.policyAndSafety.disputeFreezeAdherenceRate !== null
+          ? Number(metrics.policyAndSafety.disputeFreezeAdherenceRate.toFixed(2))
+          : null,
+        disputeCasesCount: metrics.policyAndSafety.disputeCasesCount,
+        activeFrozenCommitmentsCount: metrics.policyAndSafety.activeFrozenCommitmentsCount,
+        schemaValidityRate: metrics.llm.schemaValidityRate !== null
+          ? Number(metrics.llm.schemaValidityRate.toFixed(2))
+          : null,
+        meanConfidence: metrics.llm.meanConfidence !== null
+          ? Number(metrics.llm.meanConfidence.toFixed(4))
+          : null,
+        hallucinationRate: metrics.llm.hallucinationRate !== null
+          ? Number(metrics.llm.hallucinationRate.toFixed(2))
+          : null,
       },
-      scenarios,
-      replyParses: allParses,
-      totalCases: allCases.length,
+      scenarios: metrics.scenarios,
+      replyParses: replyParses.slice(0, 50),
     });
   } catch (err) {
     console.error('Evaluation API error:', err);

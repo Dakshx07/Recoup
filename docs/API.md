@@ -94,20 +94,42 @@ Advances the authoritative simulated clock by $N$ days and runs all due checks.
 ---
 
 ### `GET /api/evaluation`
-Computes live benchmark recovery metrics across the 200-case dataset.
+Computes live empirical benchmark recovery metrics across the 200-case dataset directly from PostgreSQL.
 
 #### Success Response (`200 OK`):
 ```json
 {
-  "totalCases": 200,
-  "totalInvoiced": 8540000,
-  "totalRecovered": 5840000,
-  "recoveryRate": 68.4,
-  "baselineRecoveryRate": 42.0,
-  "recoveryLiftPoints": 26.4,
-  "promiseKeptRate": 91.7,
-  "disputeCorrectnessRate": 100.0,
-  "hallucinationRate": 0.0,
-  "classificationAccuracy": 98.2
+  "success": true,
+  "measured": true,
+  "metrics": {
+    "totalInvoiced": 12477150,
+    "totalRecovered": 5005977,
+    "totalOutstanding": 7471173,
+    "recoveryRate": 40.12,
+    "totalCases": 200,
+    "settledCases": 80,
+    "settlementRate": 40.0,
+    "resolvedPromiseHonorRate": 70.0,
+    "cleanPromiseHonorRate": 100.0,
+    "disputeFreezeAdherenceRate": 100.0,
+    "disputeCasesCount": 40,
+    "activeFrozenCommitmentsCount": 18,
+    "schemaValidityRate": 100.0,
+    "meanConfidence": 0.9195,
+    "hallucinationRate": 0.0
+  },
+  "scenarios": [
+    {
+      "key": "CLEAN_PROMISE",
+      "name": "Clean promise, kept on time",
+      "count": 60,
+      "share": "30%",
+      "totalInvoiced": 3725350,
+      "totalRecovered": 3725350,
+      "totalOutstanding": 0,
+      "recoveryRate": 100.0,
+      "statusSummary": "60/60 Settled Full (100.0%)"
+    }
+  ]
 }
 ```
