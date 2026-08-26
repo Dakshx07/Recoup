@@ -77,36 +77,38 @@ function TimelineItem({ event, simulatedNow }: { event: AuditEvent; simulatedNow
             : 'bg-white border-neutral-200 hover:bg-neutral-50/50'
         }`}
       >
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-4">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold border ${config.badge}`}>
+        <div className="space-y-1.5">
+          {/* Header Row: Actor Badge, Event Type, and Simulated Timestamp */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold border ${config.badge} flex-shrink-0`}>
                 {config.label}
               </span>
-              <span className="text-[11px] font-mono text-neutral-400">·</span>
-              <span className="text-xs font-mono font-medium text-neutral-600">
+              <span className="text-[11px] font-mono text-neutral-300 flex-shrink-0">·</span>
+              <span className="text-xs font-mono font-medium text-neutral-600 truncate">
                 {event.eventType}
               </span>
             </div>
 
-            <p className="text-xs font-medium text-neutral-900 leading-relaxed">
-              {event.summary}
-            </p>
-          </div>
-          
-          {/* Dual Timestamps: Calculated against Simulated Now, real wall-clock kept for immutable audit */}
-          <div className="text-left sm:text-right flex-shrink-0 font-mono">
-            <p className="text-[11px] font-semibold text-neutral-800 tabular-nums">
+            {/* Simulated Time */}
+            <span className="text-[11px] font-mono font-semibold text-neutral-800 tabular-nums whitespace-nowrap flex-shrink-0">
               {formatSimulatedTime(event.simulatedTime)}
-              {relativeTime && (
-                <span className="text-neutral-500 font-normal ml-1">
-                  ({relativeTime})
-                </span>
-              )}
-            </p>
-            <p className="text-[10px] text-neutral-400 tabular-nums mt-0.5">
-              Real: {formatRealWallClock(event.realTime)}
-            </p>
+            </span>
+          </div>
+
+          {/* Body: Summary Text */}
+          <p className="text-xs font-medium text-neutral-900 leading-relaxed break-words pt-0.5">
+            {event.summary}
+          </p>
+
+          {/* Footer Row: Immutable Real Wall-Clock & Relative Sim Time */}
+          <div className="pt-1 flex items-center justify-between gap-2 text-[10.5px] font-mono text-neutral-400 border-t border-neutral-100/60">
+            <span className="truncate">Real: {formatRealWallClock(event.realTime)}</span>
+            {relativeTime && (
+              <span className="text-neutral-500 whitespace-nowrap flex-shrink-0">
+                {relativeTime}
+              </span>
+            )}
           </div>
         </div>
 

@@ -13,7 +13,7 @@ export function AuditLedgerSection() {
             An immutable decision ledger for every case
           </h2>
           <p className="text-xs sm:text-sm md:text-sm text-neutral-500 mt-4 max-w-xl mx-auto leading-relaxed">
-            The 7-step causal chain for Case INV-2101 (Olive Trading) showing inbound replies, LLM intent extractions, and the Dispute-Freeze rule in action.
+            The 7-step causal chain for Case INV-2101 (Olive Trading) showing inbound replies, LLM structured intent extractions, deterministic Policy Engine gating, and the Dispute-Freeze rule in action.
           </p>
         </div>
 
@@ -27,6 +27,9 @@ export function AuditLedgerSection() {
               <span className="text-xs font-mono text-neutral-500 ml-2">recoup.internal/app/cases/39fff352...</span>
             </div>
             <div className="flex items-center gap-2 text-xs font-mono text-neutral-500">
+              <span className="px-2 py-0.5 rounded bg-neutral-200/80 text-neutral-700 text-[10.5px]">
+                SIMULATED REPLAY
+              </span>
               <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200 font-semibold">
                 DISPUTE_OPEN
               </span>

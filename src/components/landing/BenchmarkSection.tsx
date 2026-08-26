@@ -27,9 +27,9 @@ export function BenchmarkSection() {
             <p className="text-xs text-neutral-400 mt-1 font-mono">₹50,05,977 extinguished debt</p>
           </div>
           <div className="bg-white rounded-2xl border border-neutral-200 p-5 shadow-xs">
-            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider font-mono">Recovery Rate</p>
+            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider font-mono">Capital Recovery Rate</p>
             <p className="text-2xl font-bold text-blue-700 font-mono mt-1">40.12%</p>
-            <p className="text-xs text-neutral-400 mt-1 font-mono">80 of 200 cases settled full/partial</p>
+            <p className="text-xs text-neutral-400 mt-1 font-mono">80 of 200 cases settled (40.0%)</p>
           </div>
           <div className="bg-white rounded-2xl border border-neutral-200 p-5 shadow-xs">
             <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider font-mono">Freeze Adherence</p>
@@ -50,7 +50,7 @@ export function BenchmarkSection() {
               </p>
             </div>
             <span className="inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium bg-neutral-100 text-neutral-700">
-              N = 200 Invoices
+              N = 200 Simulated Invoices
             </span>
           </div>
 

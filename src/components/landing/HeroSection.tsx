@@ -47,7 +47,7 @@ export function HeroSection() {
           <div className="bg-white p-4 rounded-xl border border-neutral-200 shadow-2xs hover:border-neutral-300 transition-colors">
             <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider font-mono">Recovery Rate</p>
             <p className="text-xl sm:text-2xl font-bold text-neutral-950 font-mono mt-0.5">40.12%</p>
-            <p className="text-[11px] text-green-700 font-medium mt-0.5">₹50.06L recovered book</p>
+            <p className="text-[11px] text-green-700 font-medium mt-0.5">₹50.06L in 200-case simulation</p>
           </div>
           <div className="bg-white p-4 rounded-xl border border-neutral-200 shadow-2xs hover:border-neutral-300 transition-colors">
             <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider font-mono">Dispute Accuracy</p>
