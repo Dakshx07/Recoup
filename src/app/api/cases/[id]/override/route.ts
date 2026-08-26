@@ -13,6 +13,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerClient } from '@/infra/supabase-server-client';
 import { createClient } from '@/lib/supabase/server';
+import {
+  RecoveryCaseState,
+  TERMINAL_CASE_STATES,
+} from '@/domain/state-machine/recovery-case.states';
+import { validateCaseTransition } from '@/domain/state-machine/transitions';
 
 export async function POST(
   request: NextRequest,
@@ -65,7 +70,26 @@ export async function POST(
       return NextResponse.json({ error: 'Case not found' }, { status: 404 });
     }
 
-    // 2. Validate expected state if provided by client
+    // 2. Reject any override on terminal states
+    if (TERMINAL_CASE_STATES.has(caseData.state as RecoveryCaseState)) {
+      return NextResponse.json(
+        { error: `Cannot perform override action on case in terminal state: ${caseData.state}` },
+        { status: 400 }
+      );
+    }
+
+    // 3. Validate dispute actions require DISPUTE_OPEN state
+    if (
+      (action === 'reject_dispute' || action === 'uphold_dispute') &&
+      caseData.state !== RecoveryCaseState.DISPUTE_OPEN
+    ) {
+      return NextResponse.json(
+        { error: `Dispute action '${action}' can only be performed when case is in DISPUTE_OPEN state (currently: ${caseData.state})` },
+        { status: 400 }
+      );
+    }
+
+    // 4. Validate expected state if provided by client
     if (expectedState && caseData.state !== expectedState) {
       return NextResponse.json(
         { error: `Conflict: Case is currently in ${caseData.state}, expected ${expectedState}. Please refresh.` },
@@ -85,24 +109,36 @@ export async function POST(
         .eq('is_frozen', true);
 
       if (commitments && commitments.length > 0) {
-        newState = 'COMMITMENT_ACTIVE';
+        newState = RecoveryCaseState.COMMITMENT_ACTIVE;
         reasonText = `Dispute rejected by reviewer (${reviewerEmail}) — commitment unfrozen toward original due date. Justification: ${justification.trim()}`;
       } else {
-        newState = 'AWAITING_REPLY';
-        reasonText = `Dispute rejected by reviewer (${reviewerEmail}) — recovery cadence resumed. Justification: ${justification.trim()}`;
+        newState = RecoveryCaseState.OPEN;
+        reasonText = `Dispute rejected by reviewer (${reviewerEmail}) — case returned to open cadence. Justification: ${justification.trim()}`;
       }
     } else if (action === 'uphold_dispute') {
-      newState = 'AWAITING_REPLY';
+      newState = RecoveryCaseState.OPEN;
       reasonText = `Dispute upheld by reviewer (${reviewerEmail}) — commitment voided (VOIDED_BY_DISPUTE). Case reopened for negotiation. Justification: ${justification.trim()}`;
     } else if (action === 'escalate') {
-      newState = 'ESCALATED';
+      newState = RecoveryCaseState.ESCALATED;
       reasonText = `Manual force escalation by reviewer (${reviewerEmail}). Justification: ${justification.trim()}`;
     } else if (action === 'write_off') {
-      newState = 'CLOSED_WRITTEN_OFF';
+      newState = RecoveryCaseState.CLOSED_WRITTEN_OFF;
       reasonText = `Balance written off by reviewer (${reviewerEmail}). Justification: ${justification.trim()}`;
     }
 
-    // 3. Atomic Optimistic State Precondition Update
+    // 5. Validate that the calculated newState transition is valid per state machine
+    const transitionValidation = validateCaseTransition(
+      caseData.state as RecoveryCaseState,
+      newState as RecoveryCaseState
+    );
+    if (!transitionValidation.valid) {
+      return NextResponse.json(
+        { error: `Invalid transition for override: ${transitionValidation.reason}` },
+        { status: 400 }
+      );
+    }
+
+    // 6. Atomic Optimistic State Precondition Update
     const { data: updatedCases, error: updateError } = await supabase
       .from('recovery_cases')
       .update({
