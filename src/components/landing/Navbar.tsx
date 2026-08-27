@@ -1,13 +1,28 @@
 'use client';
 
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
 import { ArrowRight, Code2 } from 'lucide-react';
+import { RecoupLogo } from '@/components/ui/logo';
 
 interface NavbarProps {
-  scrolled: boolean;
+  scrolled?: boolean;
 }
 
-export function Navbar({ scrolled }: NavbarProps) {
+export function Navbar({ scrolled: externalScrolled }: NavbarProps = {}) {
+  const [internalScrolled, setInternalScrolled] = useState(false);
+
+  useEffect(() => {
+    if (externalScrolled !== undefined) return;
+    const handleScroll = () => {
+      setInternalScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [externalScrolled]);
+
+  const scrolled = externalScrolled !== undefined ? externalScrolled : internalScrolled;
+
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -19,9 +34,7 @@ export function Navbar({ scrolled }: NavbarProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-neutral-900 flex items-center justify-center text-white font-bold text-base shadow-sm group-hover:scale-105 transition-transform">
-              R
-            </div>
+            <RecoupLogo size={32} className="w-8 h-8 group-hover:scale-105 transition-transform" />
             <span className="font-bold text-lg tracking-tight text-neutral-900">
               Recoup
             </span>

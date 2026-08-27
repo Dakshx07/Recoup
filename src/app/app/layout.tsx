@@ -15,6 +15,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { RecoupLogo } from '@/components/ui/logo';
 
 const NAV_ITEMS = [
   { href: '/app', label: 'Overview', icon: LayoutDashboard },
@@ -79,18 +80,21 @@ export default function DashboardLayout({
           {!collapsed ? (
             <Link
               href="/"
-              className="text-lg font-semibold tracking-tight text-neutral-900 hover:text-blue-600 transition-colors flex items-center gap-1.5"
+              className="flex items-center gap-2 group hover:opacity-85 transition-opacity"
               title="Back to Landing Website"
             >
-              <span>Recoup</span>
+              <RecoupLogo size={24} className="w-6 h-6" />
+              <span className="text-base font-bold tracking-tight text-neutral-900 group-hover:text-blue-600 transition-colors">
+                Recoup
+              </span>
             </Link>
           ) : (
             <Link
               href="/"
-              className="text-lg font-bold text-neutral-900 hover:text-blue-600 transition-colors flex items-center justify-center"
+              className="flex items-center justify-center w-full hover:opacity-85 transition-opacity"
               title="Back to Landing Website"
             >
-              <span>R</span>
+              <RecoupLogo size={24} className="w-6 h-6" />
             </Link>
           )}
           <button

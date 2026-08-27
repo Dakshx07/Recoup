@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ExternalLink } from 'lucide-react';
+import { RecoupLogo } from '@/components/ui/logo';
 
 export function Footer() {
   return (
@@ -8,9 +9,7 @@ export function Footer() {
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-8 border-b border-neutral-200">
           {/* Logo and Tagline */}
           <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-lg bg-neutral-900 flex items-center justify-center text-white font-bold text-sm shadow-xs">
-              R
-            </div>
+            <RecoupLogo size={28} className="w-7 h-7" />
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-bold text-neutral-900 text-sm">Recoup</span>
