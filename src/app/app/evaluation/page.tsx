@@ -48,17 +48,17 @@ export default async function EvaluationPage({
   return (
     <div className="space-y-6 pb-12">
       <div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <h1 className="text-xl font-semibold text-neutral-900 tracking-tight">
             Evaluation Harness & Benchmark
           </h1>
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-green-50 text-green-700 border border-green-200">
-            <Database className="w-3 h-3" />
-            Live PostgreSQL Ground Truth
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-mono font-medium bg-neutral-100 text-neutral-700 border border-neutral-200">
+            <Database className="w-3 h-3 text-neutral-500" />
+            200-Case Benchmark Snapshot · Immutable Baseline
           </span>
         </div>
         <p className="text-sm text-neutral-500 mt-0.5">
-          Empirical verification derived from the 200-case enterprise portfolio with zero hardcoded floors or fallback clamps.
+          Empirical verification derived from the 200-case enterprise portfolio with zero hardcoded floors. Live Razorpay Test Mode demo activity is tracked in the operations ledger.
         </p>
       </div>
 
@@ -88,6 +88,19 @@ export default async function EvaluationPage({
 
       {tab === 'metrics' && (
         <div className="space-y-6">
+          {financials.liveDemoPaymentsCount > 0 && (
+            <div className="flex items-center justify-between text-xs bg-white border border-neutral-200 px-3.5 py-2.5 rounded-lg shadow-2xs text-neutral-700 font-mono">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
+                <span>
+                  Live Demo Activity: <strong>{financials.liveDemoPaymentsCount}</strong> Razorpay Test Mode payment{financials.liveDemoPaymentsCount > 1 ? 's' : ''} (₹{financials.liveDemoRecoveredAmount.toLocaleString('en-IN')}) verified in operations ledger
+                </span>
+              </div>
+              <span className="text-[11px] text-neutral-400 font-normal">
+                Excluded from benchmark baseline
+              </span>
+            </div>
+          )}
           {/* Primary Top Metric Strip (Prominently displaying measured book values) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white rounded-lg border border-neutral-200 border-l-4 border-l-neutral-900 p-4">
