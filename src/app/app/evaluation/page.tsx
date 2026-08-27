@@ -89,7 +89,7 @@ export default async function EvaluationPage({
       {tab === 'metrics' && (
         <div className="space-y-6">
           {financials.liveDemoPaymentsCount > 0 && (
-            <div className="flex items-center justify-between text-xs bg-white border border-neutral-200 px-3.5 py-2.5 rounded-lg shadow-2xs text-neutral-700 font-mono">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs bg-white border border-neutral-200 px-4 py-2.5 rounded-lg shadow-2xs text-neutral-700 font-mono">
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
                 <span>
@@ -97,7 +97,7 @@ export default async function EvaluationPage({
                 </span>
               </div>
               <span className="text-[11px] text-neutral-400 font-normal">
-                Excluded from benchmark baseline
+                Live Test Mode payments are tracked in operations ledger · Excluded from benchmark baseline
               </span>
             </div>
           )}

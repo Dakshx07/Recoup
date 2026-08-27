@@ -26,6 +26,7 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <head>
         {/* Google Font: Caacupé One */}
@@ -38,7 +39,7 @@ export default function RootLayout({
         {/* Blade typography matching Razorpay's actual product feel */}
         <link href="https://cdn.jsdelivr.net/npm/@razorpay/blade/fonts.css" rel="stylesheet" />
       </head>
-      <body className="min-h-full flex flex-col font-sans">{children}</body>
+      <body className="min-h-full flex flex-col font-sans" suppressHydrationWarning>{children}</body>
     </html>
   );
 }
