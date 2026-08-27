@@ -6,7 +6,7 @@ The Recoup Policy Engine is the sole authority for evaluating promise validity, 
 
 ## 1. The 13 Locked Business Constants
 
-All thresholds live in [`src/domain/policy-engine/config.ts`](../src/domain/policy-engine/config.ts) and are verified by 166 automated unit tests.
+All thresholds live in [`src/domain/policy-engine/config.ts`](../src/domain/policy-engine/config.ts) and are verified by 215 automated tests.
 
 | Constant Name | Value | Description |
 |---|---|---|

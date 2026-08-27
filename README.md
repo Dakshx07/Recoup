@@ -21,57 +21,56 @@ Financial debt collection cannot be delegated to an autonomous LLM with direct d
 
 ## 2. Core Architecture & Philosophy
 
-Recoup enforces a strict architectural boundary: **AI proposes &rarr; Policy Engine decides &rarr; State Transition Service mutates &rarr; Audit Ledger records.**
+Recoup enforces a strict architectural boundary: **AI proposes &rarr; Schema validates &rarr; Policy Engine decides &rarr; State Transition Service mutates &rarr; Audit Ledger records.**
 
-```
-                     ┌──────────────────────────────────────────────┐
-                     │          Debtor Inbound Channel              │
-                     │          (Email / WhatsApp Reply)            │
-                     └──────────────────────┬───────────────────────┘
-                                            │
-                                            ▼
-                     ┌──────────────────────────────────────────────┐
-                     │          Intelligence Layer (LLM)            │
-                     │          • Google Gemini 2.0 Flash           │
-                     │          • Schema-Validated JSON Output      │
-                     │          • ZERO Tool / DB Permissions        │
-                     └──────────────────────┬───────────────────────┘
-                                            │ Intent: PROMISE_CANDIDATE | DISPUTE_CANDIDATE
-                                            ▼
-                     ┌──────────────────────────────────────────────┐
-                     │       Authority Layer (Policy Engine)        │
-                     │       • 13 Locked Business Constants         │
-                     │       • Dispute-Freeze Enforcement           │
-                     │       • Quiet Hours & Frequency Caps         │
-                     └──────────────────────┬───────────────────────┘
-                                            │ Legal Precondition Check
-                                            ▼
-                     ┌──────────────────────────────────────────────┐
-                     │    State Transition Service (Sole Writer)    │
-                     │    • Optimistic Concurrency Preconditions    │
-                     │    • Atomic DB Mutation                      │
-                     └──────────────────────┬───────────────────────┘
-                                            │
-                                            ▼
-                     ┌──────────────────────────────────────────────┐
-                     │    PostgreSQL / Supabase (RLS-Protected)     │
-                     │    • recovery_cases (10 States)              │
-                     │    • commitments (8 Statuses)                │
-                     │    • audit_events (Append-Only)              │
-                     └──────────────────────┬───────────────────────┘
-                                            ▲
-                                            │ Override Decision + Justification
-                     ┌──────────────────────┴───────────────────────┐
-                     │         Human Reviewer Operations            │
-                     │         • Reject dispute -> Resume           │
-                     │         • Uphold dispute -> Void             │
-                     └──────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph Channel ["1. Inbound Ingestion"]
+        Inbound["Debtor Reply<br/>(Email / WhatsApp)"]
+    end
+
+    subgraph LLM_Boundary ["2. Intelligence Layer (Zero-Tool Boundary)"]
+        Parser["Gemini 2.0 Flash<br/>(Structured Extraction)"]
+        Zod["Zod Schema Validator<br/>(Strict JSON Enforcement)"]
+    end
+
+    subgraph Policy_Layer ["3. Authority Layer (Deterministic Policy Engine)"]
+        Policy["Policy Engine Rules<br/>• 13 Locked Constants<br/>• Dispute-Freeze Check<br/>• Quiet Hours & Frequency Caps"]
+    end
+
+    subgraph State_Layer ["4. Execution & State Transition Layer"]
+        Writer["State Transition Service<br/>• Legal Transition Validation<br/>• Optimistic Concurrency Preconditions<br/>• Atomic PostgreSQL Mutation"]
+    end
+
+    subgraph Storage ["5. Immutable Persistence Layer"]
+        DB[("Supabase PostgreSQL<br/>• recovery_cases (10 States)<br/>• commitments (8 Statuses)<br/>• RLS Default-Deny")]
+        Audit[("audit_events<br/>• Append-Only Ledger<br/>• Dual Timestamps (Simulated + Wall-Clock)")]
+    end
+
+    subgraph Human ["6. Human Review Operations"]
+        Reviewer["Reviewer Dashboard<br/>• Reject dispute -> Resume commitment<br/>• Uphold dispute -> Void commitment<br/>• Mandatory Written Justification"]
+    end
+
+    Inbound --> Parser
+    Parser --> Zod
+    Zod -->|"PROMISE_CANDIDATE / DISPUTE_CANDIDATE"| Policy
+    Policy -->|"Validated Legal Transition"| Writer
+    Writer --> DB
+    Writer --> Audit
+    DB -.->|"DISPUTE_OPEN / ESCALATED"| Reviewer
+    Reviewer -->|"Human Override (409 Protected)"| Writer
+
+    style LLM_Boundary fill:#fef3c7,stroke:#f59e0b,stroke-width:2px
+    style Policy_Layer fill:#dbeafe,stroke:#3b82f6,stroke-width:2px
+    style State_Layer fill:#e0e7ff,stroke:#6366f1,stroke-width:2px
+    style Storage fill:#dcfce7,stroke:#22c55e,stroke-width:2px
+    style Human fill:#f3e8ff,stroke:#a855f7,stroke-width:2px
 ```
 
 ### Architectural Guarantees:
-- **Zero-Tool LLM**: The LLM acts strictly as a structured parser. It cannot write to `recovery_cases`, `commitments`, `invoices`, or `audit_events`.
-- **Single Write Path**: State transitions are exclusively executed by `StateTransitionService` with optimistic concurrency locking.
-- **Append-Only Auditing**: Every state mutation, decision rationale, and reviewer justification is recorded with dual timestamps.
+- **Zero-Tool LLM**: The LLM acts strictly as a structured parser. It possesses zero tools and zero direct write privileges to `recovery_cases`, `commitments`, `invoices`, or `audit_events`.
+- **Single Write Path**: State transitions are exclusively executed by `StateTransitionService` with legal transition validation and optimistic concurrency locking.
+- **Append-Only Auditing**: Every state mutation, decision rationale, and reviewer justification is permanently appended with dual timestamps.
 
 ---
 
@@ -79,19 +78,27 @@ Recoup enforces a strict architectural boundary: **AI proposes &rarr; Policy Eng
 
 The core financial safety mechanism of Recoup is the **Dispute-Freeze Rule** ([ADR 0006](docs/adr/0006-dispute-freeze-not-cancel-rule.md)):
 
-```
-[VALID_ACTIVE Commitment] ──(Debtor Disputes Charges)──► [Commitment FROZEN (is_frozen = true)]
-                                                                  │
-                                                         Case moved to DISPUTE_OPEN
-                                                                  │
-                                                        Human Review Required
-                                                                  │
-                                   ┌──────────────────────────────┴──────────────────────────────┐
-                                   ▼                                                             ▼
-                [Reject Dispute — Resume Commitment]                          [Uphold Dispute — Void Commitment]
-                • Case: COMMITMENT_ACTIVE                                     • Case: AWAITING_REPLY
-                • Commitment: VALID_ACTIVE                                    • Commitment: VOIDED_BY_DISPUTE
-                • is_frozen = false (Preserves Due Date)                      • is_frozen = false (Reopens Case)
+```mermaid
+stateDiagram-v2
+    [*] --> VALID_ACTIVE: Valid Promise Registered
+
+    state VALID_ACTIVE {
+        [*] --> Monitoring: Active Due Date
+    }
+
+    VALID_ACTIVE --> FROZEN_DISPUTE: Debtor Raises Dispute
+    
+    state FROZEN_DISPUTE {
+        [*] --> Held: is_frozen = true
+        Held --> PendingReview: Case state = DISPUTE_OPEN
+    }
+
+    FROZEN_DISPUTE --> VALID_ACTIVE: Reject Dispute (Unfreezes & Resumes Commitment)
+    FROZEN_DISPUTE --> VOIDED_BY_DISPUTE: Uphold Dispute (Voids Commitment & Reopens Case)
+
+    VALID_ACTIVE --> CLOSED_PAID: Webhook Verified Full Settlement
+    VALID_ACTIVE --> COMMITMENT_BROKEN: Due Date Elapsed (0 Payment)
+    COMMITMENT_BROKEN --> ESCALATED: Day 14 Trigger -> Human Review
 ```
 
 1. When a debtor disputes an invoice that already has an active promise, the commitment is **frozen** (`is_frozen = true`, `status = VALID_ACTIVE`), never deleted or voided.
@@ -136,16 +143,17 @@ Recoup is evaluated against a synthetic benchmark of **200 realistic enterprise 
 | **Resolved Promise Honor Rate** | **70.0%** | 70 of 100 resolved promises kept/partial | `MEASURED` |
 | **Dispute-Freeze Adherence** | **100.0%** | 18 active promises frozen, 0 wrongfully cancelled | `MEASURED` |
 | **LLM Strict Schema Validity** | **100.0%** | 180 of 180 parses conform to Zod schema | `MEASURED` |
+| **Human Review Queue** | **20.0%** | 40/200 cases safely isolated in `DISPUTE_OPEN` | `MEASURED` |
 
 ---
 
 ## 7. Tech Stack
 
-- **Frontend**: Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS, Lucide Icons, Razorpay Blade Design Language.
+- **Frontend**: Next.js 16 (App Router with Turbopack), React 19, TypeScript, Tailwind CSS, Lucide Icons, Razorpay Blade Design System.
 - **Backend & API**: Next.js Server Components, Route Handlers, TypeScript Domain Services.
 - **Database & Security**: PostgreSQL, Supabase, Row Level Security (RLS) default-deny policies, service-role server writes.
-- **AI & Extraction**: Google Gemini 2.0 Flash via `@google/genai` with Zod JSON schema validation.
-- **Testing & Tooling**: Vitest (166 unit/policy tests), TypeScript strict mode (`tsc --noEmit`).
+- **AI & Extraction**: Google Gemini 2.0 Flash via `@google/generative-ai` with strict Zod JSON schema validation.
+- **Testing & Verification**: Vitest (**215 automated tests** across 15 suites: Unit, Adversarial Red-Team, and Multi-Module Integration Flows), TypeScript strict mode (`tsc --noEmit`).
 
 ---
 
@@ -164,8 +172,8 @@ Recoup is evaluated against a synthetic benchmark of **200 realistic enterprise 
 │   ├── LIMITATIONS.md           # Prototype boundaries & production roadmap
 │   └── adr/                     # Architecture Decision Records (0001–0007)
 ├── scripts/
-│   ├── simulation-runner.ts     # Populates 200-case multi-step benchmark
-│   └── generate-synthetic-data.ts
+│   ├── generate-synthetic-data.ts # Deterministic 200-case synthetic benchmark seeder
+│   └── simulation-runner.ts     # Multi-step state machine runner
 ├── src/
 │   ├── app/                     # Next.js App Router (Landing page & /app console)
 │   ├── components/dashboard/    # Blade-styled operational recovery components
@@ -173,11 +181,14 @@ Recoup is evaluated against a synthetic benchmark of **200 realistic enterprise 
 │   │   ├── clock/               # Clock abstraction (LiveClock vs SimulatedClock)
 │   │   ├── llm/                 # Gemini parser, drafter & Zod schemas
 │   │   ├── policy-engine/       # 13 locked constants & deterministic rules
-│   │   └── state-machine/       # Case & Commitment states and validators
+│   │   └── state-machine/       # Case & Commitment states and transition validators
 │   ├── infra/                   # Supabase browser & service-role server clients
-│   └── services/                # StateTransitionService & AuditLoggerService
+│   └── services/                # StateTransitionService, CronService, PaymentVerifier
 ├── supabase/migrations/         # 6 SQL schema migrations with RLS & triggers
-└── tests/unit/                  # 166 Vitest unit & policy tests
+└── tests/                       # 215 automated tests across 15 test files
+    ├── unit/                    # Unit & Policy Engine tests
+    ├── integration/             # End-to-end multi-module service integration flows
+    └── fixtures/                # Relational test factories & in-memory PostgreSQL store
 ```
 
 ---
@@ -216,7 +227,7 @@ Run the migrations in `supabase/migrations/` in order (`0001` through `0006`) vi
 
 ### 4. Seed Benchmark Dataset
 ```bash
-npm run simulate
+npm run generate-synthetic-data
 ```
 
 ### 5. Run the Application
@@ -227,24 +238,39 @@ Open [http://localhost:3000](http://localhost:3000) to view the landing page, or
 
 ### 6. Run Automated Tests & Typecheck
 ```bash
-npm test            # Runs 166 unit/policy tests via Vitest
+npm test            # Runs 215 automated tests via Vitest
 npm run typecheck   # Strict TypeScript static analysis
+npm run build       # Production bundle build check
 ```
 
 ---
 
-## 10. Recommended Demo Flow
+## 10. Honest MVP Scope & Simulation Boundaries
 
-1. **Landing Page (`/`)**: Inspect the high-craft convergence artwork, Fraunces serif typography, 5-stage lifecycle, and 2-panel AI boundary.
-2. **Operations Console (`/app`)**: Review the 4-metric strip (₹50.06L recovered, ₹74.71L at risk) and the Needs Attention priority table.
-3. **Case Detail (`/app/cases/[id]`)**: Open Case **`INV-2101`** (*Olive Trading*):
-   - Review the **7-step causal audit trail** (`case_opened` &rarr; `debtor_reply_received` &rarr; `reply_parsed` &rarr; `commitment_validated` &rarr; `dispute_detected_commitment_frozen`).
-   - Inspect the **Frozen Commitment Card** showing ₹42,000 due Jan 10 (`due in 5 days`).
-   - Test the **Dispute Override Panel**: select *"Reject dispute — resume commitment"* or *"Uphold dispute — void commitment"*, enter justification, and confirm execution.
-   - Observe the instant atomic state update and the newly appended immutable audit record.
-4. **Evaluation Benchmark (`/app/evaluation`)**: Inspect the live PostgreSQL benchmark metrics, 8-scenario dynamic breakdown, and live Model Activity logs.
-5. **Policy Engine (`/app/policy`)**: Review the 13 locked business rules imported directly from `config.ts`.
-6. **Clock Simulator (`/app/simulation`)**: Advance the authoritative clock by +1, +3, or +7 days to trigger batch lifecycle evaluations.
+In accordance with buildathon constraints, Recoup clearly distinguishes its production-grade deterministic backend from simulated prototype integrations:
+
+| Component | MVP Prototype Implementation | Commercial Production Target |
+|---|---|---|
+| **Outreach Channels** | Ingested via synthetic simulation fixtures & in-memory runner | Multi-channel SMS/WhatsApp (Twilio/Gupshup) & SendGrid email APIs |
+| **Payment Ingestion** | Simulated Razorpay webhook payloads with `PaymentVerifier` | Production Razorpay webhook HMAC verification & reconciliation API |
+| **Clock Engine** | Dual-timestamp `SimulatedClock` for reproducible evaluation | Live UTC `LiveClock` with distributed Temporal / AWS SQS workers |
+| **Benchmark Dataset** | 200-case synthetic dataset across 8 behavioral archetypes | Live ERP / accounting system sync (Tally, Zoho, Quickbooks) |
+| **Multi-Tenancy** | Single-merchant deployment with role-based dashboard | Multi-tenant merchant isolation with scoped RLS partitions |
+
+---
+
+## 11. Recommended Demo Flow
+
+1. **Landing Page (`/`)**: Review the Fraunces headline, 5-stage recovery arc, and the side-by-side AI boundary comparison.
+2. **Operations Console (`/app`)**: Observe the 4-metric strip (₹50.06L recovered, 40.1% recovery rate) and the Needs Attention priority queue.
+3. **Case Queue (`/app/cases`)**: Explore active cases, filtering by Attention or All cases with unified portfolio metrics.
+4. **Real Dispute Case Detail (`/app/cases/[id]`)**: Open a disputed case (e.g. `INV-2106` - *Tidal Logistics*):
+   - Review the **Causal Decision Trail** (`case_opened` &rarr; `debtor_reply_received` &rarr; `reply_parsed` &rarr; `commitment_validated` &rarr; `dispute_detected_commitment_frozen`).
+   - Inspect the **Frozen Commitment Card** showing ₹88,000 with status `FROZEN — UNDER DISPUTE REVIEW`.
+   - Inspect the **Human Override Panel**: notice the clear actions *"Reject dispute — resume commitment"* and *"Uphold dispute — void commitment"*.
+5. **Evaluation Benchmark (`/app/evaluation`)**: Inspect the live PostgreSQL benchmark metrics, 8-scenario dynamic breakdown, and live Model Activity logs.
+6. **Policy Engine (`/app/policy`)**: Review the 13 locked business rules imported directly from `src/domain/policy-engine/config.ts`.
+7. **Simulation Clock (`/app/simulation`)**: Advance the authoritative clock by +1, +3, or +7 days with parallel batch cron evaluations.
 
 ---
 

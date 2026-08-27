@@ -34,50 +34,48 @@ Recoup is engineered around five fundamental fintech architecture constraints:
 
 ## 2. Component Topology
 
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              INBOUND DEBTOR CHANNEL                             │
-│                     (Email / WhatsApp webhook ingestion)                        │
-└────────────────────────────────────────┬────────────────────────────────────────┘
-                                         │
-                                         ▼
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                            INTELLIGENCE LAYER (LLM)                             │
-│                 src/domain/llm/reply-parser.ts (Gemini 2.0 Flash)               │
-│                 • Strict Zod Schema Output: { intent, amount, date, confidence }│
-│                 • ZERO Tool-Execution Permissions                               │
-│                 • ZERO Direct Database Access                                   │
-└────────────────────────────────────────┬────────────────────────────────────────┘
-                                         │
-                                         ▼
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                            AUTHORITY LAYER (POLICY)                             │
-│                 src/domain/policy-engine/ (Deterministic Rules)                 │
-│                 • 13 Locked Constants in config.ts                              │
-│                 • Quiet Hours (21:00–09:00 IST)                                 │
-│                 • 3-Touch / 7-Day Contact Frequency Cap                         │
-│                 • 90-Day Promise Horizon Limit                                  │
-│                 • Dispute-Freeze Enforcement                                    │
-└────────────────────────────────────────┬────────────────────────────────────────┘
-                                         │ Validated Transition Command
-                                         ▼
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                        STATE TRANSITION SERVICE (WRITER)                        │
-│                 src/services/state-transition.service.ts                        │
-│                 • Optimistic Concurrency Precondition Validation                │
-│                 • Atomic Mutex on recovery_cases & commitments                  │
-│                 • Simultaneous Immutable Audit Row Insertion                    │
-└────────────────────────────────────────┬────────────────────────────────────────┘
-                                         │
-                                         ▼
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              DATA PERSISTENCE LAYER                             │
-│                           Supabase PostgreSQL 15                                │
-│                 • recovery_cases (10 States)                                    │
-│                 • commitments (8 Statuses)                                      │
-│                 • audit_events (Append-Only)                                    │
-│                 • RLS Default-Deny Policies (Bypassed ONLY via Service Role)    │
-└─────────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph Channel ["1. Inbound Ingestion Channel"]
+        Inbound["Debtor Inbound Reply<br/>(Email / WhatsApp)"]
+    end
+
+    subgraph LLM_Boundary ["2. Intelligence Layer (Zero-Tool Boundary)"]
+        Parser["Gemini 2.0 Flash<br/>(ReplyParser)"]
+        Zod["Zod Strict Schema<br/>({ intent, amount, date, confidence })"]
+    end
+
+    subgraph Policy_Layer ["3. Authority Layer (Deterministic Policy Engine)"]
+        Policy["Policy Engine<br/>• 13 Locked Constants<br/>• Dispute-Freeze Rule<br/>• Quiet Hours (21:00-09:00 IST)<br/>• Contact Frequency Cap"]
+    end
+
+    subgraph Execution_Layer ["4. Execution Layer (Single Write Authority)"]
+        Writer["State Transition Service<br/>• Optimistic Concurrency Preconditions<br/>• Transition Validation Mutex"]
+    end
+
+    subgraph Storage ["5. Persistence & Audit Layer"]
+        DB[("Supabase PostgreSQL<br/>• recovery_cases (10 States)<br/>• commitments (8 Statuses)")]
+        Audit[("audit_events<br/>• Immutable Append-Only Ledger<br/>• Dual Timestamps (Simulated + Wall-Clock)")]
+    end
+
+    subgraph Human ["6. Human Operations"]
+        Reviewer["Reviewer Dashboard<br/>• Reject dispute -> Resume<br/>• Uphold dispute -> Void<br/>• Mandatory Justification"]
+    end
+
+    Inbound --> Parser
+    Parser --> Zod
+    Zod -->|"Validated Extraction"| Policy
+    Policy -->|"Legal Command"| Writer
+    Writer --> DB
+    Writer --> Audit
+    DB -.->|"DISPUTE_OPEN"| Reviewer
+    Reviewer -->|"409-Protected Override"| Writer
+
+    style LLM_Boundary fill:#fef3c7,stroke:#f59e0b,stroke-width:2px
+    style Policy_Layer fill:#dbeafe,stroke:#3b82f6,stroke-width:2px
+    style Execution_Layer fill:#e0e7ff,stroke:#6366f1,stroke-width:2px
+    style Storage fill:#dcfce7,stroke:#22c55e,stroke-width:2px
+    style Human fill:#f3e8ff,stroke:#a855f7,stroke-width:2px
 ```
 
 ---

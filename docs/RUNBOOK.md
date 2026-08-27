@@ -61,13 +61,16 @@ npm run dev
 ---
 
 ## 5. Running Automated Verification Suites
-
+ 
 ```bash
-# Run all 166 unit and policy engine tests
+# Run all 215 unit, policy, and integration tests
 npm test
 
 # Run strict TypeScript static typecheck
 npm run typecheck
+
+# Run production build compilation
+npm run build
 ```
 
 ---
