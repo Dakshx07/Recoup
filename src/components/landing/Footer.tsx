@@ -30,7 +30,7 @@ export function Footer() {
             <Link href="/app/evaluation" className="hover:text-neutral-900 transition-colors">Benchmark</Link>
             <Link href="/app/simulation" className="hover:text-neutral-900 transition-colors">Simulation</Link>
             <a
-              href="https://github.com"
+              href="https://github.com/Dakshx07/Recoup"
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-neutral-900 text-white hover:bg-black font-semibold text-xs transition-all shadow-xs hover:shadow group cursor-pointer"

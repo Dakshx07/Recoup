@@ -2,6 +2,11 @@
   "name": "recoup",
   "version": "0.1.0",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Dakshx07/Recoup.git"
+  },
+  "homepage": "https://github.com/Dakshx07/Recoup#readme",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

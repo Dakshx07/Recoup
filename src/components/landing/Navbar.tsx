@@ -55,7 +55,7 @@ export function Navbar({ scrolled: externalScrolled }: NavbarProps = {}) {
 
         <div className="flex items-center gap-3">
           <a
-            href="https://github.com"
+            href="https://github.com/Dakshx07/Recoup"
             target="_blank"
             rel="noreferrer"
             className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 transition-colors"
