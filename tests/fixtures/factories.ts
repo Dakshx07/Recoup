@@ -5,6 +5,7 @@ export interface InvoiceFixture {
   id: string;
   merchant_id: string;
   external_id: string;
+  invoice_number?: string;
   debtor_name: string;
   debtor_email: string;
   original_amount: number;
@@ -43,6 +44,7 @@ export interface PaymentLinkFixture {
   id: string;
   invoice_id: string;
   external_link_id: string;
+  amount?: number;
   created_at: string;
 }
 

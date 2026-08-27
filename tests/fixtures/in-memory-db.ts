@@ -10,6 +10,7 @@ export interface DatabaseState {
   debtor_replies: any[];
   reply_parses: any[];
   outreach_messages: any[];
+  webhook_events: any[];
 }
 
 export function createInMemoryDatabase(initialState: Partial<DatabaseState> = {}): {
@@ -26,6 +27,7 @@ export function createInMemoryDatabase(initialState: Partial<DatabaseState> = {}
     debtor_replies: [...(initialState.debtor_replies || [])],
     reply_parses: [...(initialState.reply_parses || [])],
     outreach_messages: [...(initialState.outreach_messages || [])],
+    webhook_events: [...(initialState.webhook_events || [])],
   };
 
   function createTableQuery(tableName: keyof DatabaseState) {
@@ -80,6 +82,14 @@ export function createInMemoryDatabase(initialState: Partial<DatabaseState> = {}
           if (tableName === 'payments' && row.external_payment_id) {
             const exists = state.payments.some(
               (p) => p.external_payment_id === row.external_payment_id
+            );
+            if (exists) {
+              return { data: null, error: { code: '23505', message: 'duplicate key value violates unique constraint' } };
+            }
+          }
+          if (tableName === 'webhook_events' && row.source && row.event_id) {
+            const exists = state.webhook_events.some(
+              (w) => w.source === row.source && w.event_id === row.event_id
             );
             if (exists) {
               return { data: null, error: { code: '23505', message: 'duplicate key value violates unique constraint' } };

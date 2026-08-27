@@ -6,6 +6,7 @@ import { StatusBadge, EscalationBadge } from '@/components/dashboard/status-badg
 import { AuditTimeline, AuditEvent } from '@/components/dashboard/audit-timeline';
 import { CommitmentCard, CommitmentData } from '@/components/dashboard/commitment-card';
 import { PaymentCard, PaymentData } from '@/components/dashboard/payment-card';
+import { RazorpayPayButton } from '@/components/dashboard/razorpay-pay-button';
 import { OverridePanel } from '@/components/dashboard/override-panel';
 import { formatSimulatedTime } from '@/lib/simulated-time';
 import { format } from 'date-fns';
@@ -206,8 +207,21 @@ export default async function CaseDetailPage({
           {/* Active Commitment & Payment Verification */}
           <div className="space-y-3">
             <h2 className="text-xs font-semibold text-neutral-900 uppercase tracking-wider px-0.5">
-              Financial Commitment
+              Financial Commitment & Payment
             </h2>
+            
+            {/* Razorpay Test Mode Payment Action */}
+            <RazorpayPayButton
+              caseId={caseData.id}
+              invoiceNumber={caseData.invoices?.invoice_number || 'INV-001'}
+              outstandingAmount={Number(caseData.invoices?.outstanding_amount || 0)}
+              currency={caseData.invoices?.currency || 'INR'}
+              debtorName={caseData.invoices?.debtors?.name}
+              debtorEmail={caseData.invoices?.debtors?.contact_ref?.split('@')[0]?.replace(/^scenario:[^:]+:/, '') + '@company.in'}
+              debtorPhone={caseData.invoices?.debtors?.phone}
+              isTerminal={['CLOSED_PAID', 'CLOSED_PARTIAL', 'CLOSED_WRITTEN_OFF'].includes(caseData.state)}
+            />
+
             <CommitmentCard commitment={commitmentData} simulatedNow={caseSimulatedNow} />
             {paymentData.map((p) => (
               <PaymentCard key={p.id} payment={p} simulatedNow={caseSimulatedNow} />

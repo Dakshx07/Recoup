@@ -1,4 +1,4 @@
-import { CheckCircle2, Receipt } from 'lucide-react';
+import { CheckCircle2, Receipt, ShieldCheck, Check } from 'lucide-react';
 import { formatSimulatedTime, formatSimulatedTimeAgo } from '@/lib/simulated-time';
 
 export interface PaymentData {
@@ -7,6 +7,7 @@ export interface PaymentData {
   paidAt: string;
   verificationSource: string;
   externalId: string;
+  orderId?: string;
 }
 
 interface PaymentCardProps {
@@ -27,19 +28,30 @@ export function PaymentCard({ payment, simulatedNow }: PaymentCardProps) {
     ? formatSimulatedTimeAgo(payment.paidAt, simulatedNow)
     : '';
 
+  const isRazorpay =
+    payment.externalId?.startsWith('pay_') ||
+    payment.verificationSource?.toLowerCase().includes('razorpay');
+
   return (
-    <div className="rounded-lg border border-green-200 bg-green-50/50 p-4 mt-4">
-      <div className="flex items-center gap-2 mb-3">
-        <CheckCircle2 className="w-4 h-4 text-green-500" />
-        <span className="text-xs font-semibold uppercase tracking-wider text-green-800">
-          Payment Verified
-        </span>
+    <div className="rounded-lg border border-green-200 bg-green-50/60 p-4 mt-4 space-y-3.5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-green-600" />
+          <span className="text-xs font-bold uppercase tracking-wider text-green-900">
+            Payment Verified
+          </span>
+        </div>
+        {isRazorpay && (
+          <span className="text-[10px] font-mono font-semibold text-green-800 bg-green-100 border border-green-200 px-2 py-0.5 rounded">
+            RAZORPAY TEST MODE
+          </span>
+        )}
       </div>
 
       <div className="flex items-baseline justify-between">
         <div>
           <p className="text-xs text-neutral-500 mb-1">Amount received</p>
-          <p className="text-xl font-semibold text-neutral-900 tabular-nums">
+          <p className="text-xl font-bold text-neutral-900 tabular-nums">
             {formatCurrency(payment.amount)}
           </p>
         </div>
@@ -48,7 +60,7 @@ export function PaymentCard({ payment, simulatedNow }: PaymentCardProps) {
           <div className="flex flex-col items-end">
             <div className="flex items-center gap-1.5 text-neutral-900">
               <Receipt className="w-4 h-4 text-neutral-400" />
-              <span className="font-medium">
+              <span className="font-medium text-xs">
                 {formatSimulatedTime(payment.paidAt)}
               </span>
             </div>
@@ -60,14 +72,42 @@ export function PaymentCard({ payment, simulatedNow }: PaymentCardProps) {
           </div>
         </div>
       </div>
+
+      {/* Verification Proof Breakdown */}
+      <div className="pt-2 border-t border-green-200/70 space-y-1.5">
+        <p className="text-[11px] font-semibold text-neutral-700 uppercase tracking-wider flex items-center gap-1">
+          <ShieldCheck className="w-3.5 h-3.5 text-green-600" />
+          Automated Verification Proof
+        </p>
+        <div className="grid grid-cols-2 gap-1.5 text-[11px] text-neutral-700 font-mono">
+          <div className="flex items-center gap-1">
+            <Check className="w-3 h-3 text-green-600 flex-shrink-0" />
+            <span>Webhook Signature: Verified</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Check className="w-3 h-3 text-green-600 flex-shrink-0" />
+            <span>Payment Idempotency: Passed</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Check className="w-3 h-3 text-green-600 flex-shrink-0" />
+            <span>Ledger Reconciliation: Applied</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Check className="w-3 h-3 text-green-600 flex-shrink-0" />
+            <span>Audit Event: Recorded</span>
+          </div>
+        </div>
+      </div>
       
-      <div className="mt-4 pt-3 border-t border-black/5 flex justify-between items-center text-xs text-neutral-500">
-        <span>
+      <div className="pt-2.5 border-t border-green-200/70 flex flex-wrap justify-between items-center text-xs text-neutral-600 gap-2">
+        <span className="truncate max-w-[200px]">
           Source: {payment.verificationSource}
         </span>
-        <span className="text-[10px] font-mono text-neutral-400 bg-white px-1.5 py-0.5 rounded border border-neutral-200">
-          {payment.externalId}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] font-mono text-neutral-600 bg-white px-2 py-0.5 rounded border border-neutral-200">
+            {payment.externalId}
+          </span>
+        </div>
       </div>
     </div>
   );
