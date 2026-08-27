@@ -53,7 +53,7 @@ export default function DashboardLayout({
     fetch('/api/cases?tab=attention&limit=0')
       .then((r) => r.json())
       .then((d) => setAttentionCount(d.total ?? 0))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   async function handleLogout() {
@@ -71,16 +71,27 @@ export default function DashboardLayout({
     <div className="flex h-screen overflow-hidden bg-neutral-50">
       {/* Sidebar */}
       <aside
-        className={`flex flex-col border-r border-neutral-200 bg-white transition-all duration-200 ${
-          collapsed ? 'w-16' : 'w-56'
-        }`}
+        className={`flex flex-col border-r border-neutral-200 bg-white transition-all duration-200 ${collapsed ? 'w-16' : 'w-56'
+          }`}
       >
         {/* Logo + collapse toggle */}
         <div className="flex items-center justify-between px-4 h-14 border-b border-neutral-200">
-          {!collapsed && (
-            <span className="text-lg font-semibold tracking-tight text-neutral-900">
-              Recoup
-            </span>
+          {!collapsed ? (
+            <Link
+              href="/"
+              className="text-lg font-semibold tracking-tight text-neutral-900 hover:text-blue-600 transition-colors flex items-center gap-1.5"
+              title="Back to Landing Website"
+            >
+              <span>Recoup</span>
+            </Link>
+          ) : (
+            <Link
+              href="/"
+              className="text-lg font-bold text-neutral-900 hover:text-blue-600 transition-colors flex items-center justify-center"
+              title="Back to Landing Website"
+            >
+              <span>R</span>
+            </Link>
           )}
           <button
             onClick={() => setCollapsed(!collapsed)}
@@ -106,17 +117,15 @@ export default function DashboardLayout({
                 href={item.href}
                 className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium
                             transition-colors group relative
-                            ${
-                              active
-                                ? 'bg-blue-50 text-blue-700'
-                                : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
-                            }`}
+                            ${active
+                    ? 'bg-blue-50 text-blue-700'
+                    : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
+                  }`}
                 title={collapsed ? item.label : undefined}
               >
                 <Icon
-                  className={`w-[18px] h-[18px] flex-shrink-0 ${
-                    active ? 'text-blue-600' : 'text-neutral-400 group-hover:text-neutral-600'
-                  }`}
+                  className={`w-[18px] h-[18px] flex-shrink-0 ${active ? 'text-blue-600' : 'text-neutral-400 group-hover:text-neutral-600'
+                    }`}
                 />
                 {!collapsed && (
                   <>
@@ -154,17 +163,15 @@ export default function DashboardLayout({
                 href={item.href}
                 className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium
                             transition-colors group
-                            ${
-                              active
-                                ? 'bg-blue-50 text-blue-700'
-                                : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
-                            }`}
+                            ${active
+                    ? 'bg-blue-50 text-blue-700'
+                    : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
+                  }`}
                 title={collapsed ? item.label : undefined}
               >
                 <Icon
-                  className={`w-[18px] h-[18px] flex-shrink-0 ${
-                    active ? 'text-blue-600' : 'text-neutral-400 group-hover:text-neutral-600'
-                  }`}
+                  className={`w-[18px] h-[18px] flex-shrink-0 ${active ? 'text-blue-600' : 'text-neutral-400 group-hover:text-neutral-600'
+                    }`}
                 />
                 {!collapsed && <span>{item.label}</span>}
               </Link>
@@ -175,9 +182,8 @@ export default function DashboardLayout({
         {/* User identity + logout */}
         <div className="border-t border-neutral-200 px-2 py-3">
           <div
-            className={`flex items-center gap-3 px-3 py-2 ${
-              collapsed ? 'justify-center' : ''
-            }`}
+            className={`flex items-center gap-3 px-3 py-2 ${collapsed ? 'justify-center' : ''
+              }`}
           >
             <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
               <span className="text-xs font-semibold text-blue-700">

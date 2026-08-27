@@ -95,49 +95,78 @@ export class CronService {
       console.error('Error fetching open cases:', error);
     }
 
-    if (openCases) {
-      for (const recoveryCase of openCases) {
-        const state = recoveryCase.state as RecoveryCaseState;
-        const level = recoveryCase.escalation_level as EscalationLevel;
-        const createdAt = new Date(recoveryCase.opened_at);
-        const lastContactAt = new Date(recoveryCase.updated_at); // Simplification: using updated_at
-        const outstandingAmount = (recoveryCase.invoices as any).outstanding_amount;
+    if (openCases && openCases.length > 0) {
+      // Process open cases in parallel batches to optimize network roundtrips
+      const BATCH_SIZE = 15;
+      for (let i = 0; i < openCases.length; i += BATCH_SIZE) {
+        const batch = openCases.slice(i, i + BATCH_SIZE);
+        await Promise.all(
+          batch.map(async (recoveryCase) => {
+            const state = recoveryCase.state as RecoveryCaseState;
+            const level = recoveryCase.escalation_level as EscalationLevel;
+            const createdAt = new Date(recoveryCase.opened_at);
+            const lastContactAt = new Date(recoveryCase.updated_at);
 
-        // A. Check Stopping Rules (Max 90 days duration -> WRITE_OFF)
-        const daysOpen = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
-        if (daysOpen >= 90) {
-          await this.stateTransition.transitionCase({
-            caseId: recoveryCase.id,
-            newState: RecoveryCaseState.CLOSED_WRITTEN_OFF,
-            actor: 'system',
-            eventType: 'max_duration_exhausted',
-            reason: `Case reached max duration of 90 days (open for ${daysOpen} days)`,
-          });
-          writtenOffCount++;
-          continue;
-        }
+            // A. Check Stopping Rules (Max 90 days duration -> WRITE_OFF)
+            const daysOpen = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+            if (daysOpen >= 90) {
+              const res = await this.stateTransition.transitionCase({
+                caseId: recoveryCase.id,
+                newState: RecoveryCaseState.CLOSED_WRITTEN_OFF,
+                actor: 'system',
+                eventType: 'max_duration_exhausted',
+                reason: `Case reached max duration of 90 days (open for ${daysOpen} days)`,
+              });
+              if (res.success) writtenOffCount++;
+              return;
+            }
 
-        // B. Check Escalation Ladder
-        const escalation = evaluateEscalation({
-          caseOpenedAt: createdAt,
-          currentEscalationLevel: level,
-          outreachCount: 1, // simplified for MVP sim
-          brokenPromiseCount: 0,
-          hasActiveCommitment: state === RecoveryCaseState.COMMITMENT_ACTIVE,
-          lastOutreachAt: lastContactAt,
-        }, this.clock);
+            // B. Check Escalation Ladder
+            const escalation = evaluateEscalation({
+              caseOpenedAt: createdAt,
+              currentEscalationLevel: level,
+              outreachCount: 1, // simplified for MVP sim
+              brokenPromiseCount: 0,
+              hasActiveCommitment: state === RecoveryCaseState.COMMITMENT_ACTIVE,
+              lastOutreachAt: lastContactAt,
+            }, this.clock);
 
-        if (escalation.shouldEscalate && escalation.newLevel) {
-          await this.stateTransition.transitionCase({
-            caseId: recoveryCase.id,
-            newState: state, // State stays the same, level bumps
-            actor: 'system',
-            eventType: 'escalated',
-            reason: escalation.reason,
-            additionalUpdates: { escalation_level: escalation.newLevel },
-          });
-          escalatedCount++;
-        }
+            if (escalation.shouldEscalate && escalation.newLevel) {
+              if (escalation.action === 'ESCALATE_TO_HUMAN') {
+                const res = await this.stateTransition.transitionCase({
+                  caseId: recoveryCase.id,
+                  newState: RecoveryCaseState.ESCALATED,
+                  actor: 'system',
+                  eventType: 'case_escalated_to_human_review',
+                  reason: escalation.reason,
+                  additionalUpdates: { escalation_level: escalation.newLevel },
+                });
+                if (res.success) escalatedCount++;
+              } else {
+                // Level bump (Reminder 2 / Reminder 3) within active recovery cadence
+                await this.db
+                  .from('recovery_cases')
+                  .update({
+                    escalation_level: escalation.newLevel,
+                    updated_at: now.toISOString(),
+                  })
+                  .eq('id', recoveryCase.id);
+
+                await this.db.from('audit_events').insert({
+                  entity_type: 'recovery_case',
+                  entity_id: recoveryCase.id,
+                  actor: 'policy_engine',
+                  event_type: 'escalation_reminder_dispatched',
+                  previous_state: state,
+                  new_state: state,
+                  reason: escalation.reason,
+                  simulated_time: now.toISOString(),
+                });
+                escalatedCount++;
+              }
+            }
+          })
+        );
       }
     }
 

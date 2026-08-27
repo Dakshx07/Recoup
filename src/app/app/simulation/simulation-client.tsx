@@ -17,11 +17,13 @@ export function SimulationClient({
 }: SimulationClientProps) {
   const [simulatedTime, setSimulatedTime] = useState(initialSimulatedTime);
   const [loading, setLoading] = useState(false);
+  const [activeDays, setActiveDays] = useState<number | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [advanceLogs, setAdvanceLogs] = useState<string[]>([]);
 
   async function handleAdvance(days: number) {
     setLoading(true);
+    setActiveDays(days);
     setStatusMessage(null);
     try {
       const res = await fetch('/api/simulation/advance', {
@@ -43,6 +45,7 @@ export function SimulationClient({
       setStatusMessage(`Advanced clock simulation: ${e.message}`);
     } finally {
       setLoading(false);
+      setActiveDays(null);
     }
   }
 
@@ -105,24 +108,36 @@ export function SimulationClient({
               disabled={loading}
               className="py-2 px-3 rounded-md bg-neutral-900 hover:bg-black text-white text-xs font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
             >
-              <Play className="w-3 h-3" />
-              +1 Day
+              {activeDays === 1 ? (
+                <RefreshCw className="w-3 h-3 animate-spin" />
+              ) : (
+                <Play className="w-3 h-3" />
+              )}
+              {activeDays === 1 ? 'Running...' : '+1 Day'}
             </button>
             <button
               onClick={() => handleAdvance(3)}
               disabled={loading}
               className="py-2 px-3 rounded-md bg-neutral-900 hover:bg-black text-white text-xs font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
             >
-              <FastForward className="w-3 h-3" />
-              +3 Days
+              {activeDays === 3 ? (
+                <RefreshCw className="w-3 h-3 animate-spin" />
+              ) : (
+                <FastForward className="w-3 h-3" />
+              )}
+              {activeDays === 3 ? 'Running...' : '+3 Days'}
             </button>
             <button
               onClick={() => handleAdvance(7)}
               disabled={loading}
               className="py-2 px-3 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
             >
-              <FastForward className="w-3 h-3" />
-              +7 Days
+              {activeDays === 7 ? (
+                <RefreshCw className="w-3 h-3 animate-spin" />
+              ) : (
+                <FastForward className="w-3 h-3" />
+              )}
+              {activeDays === 7 ? 'Running...' : '+7 Days'}
             </button>
           </div>
 

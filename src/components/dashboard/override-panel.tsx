@@ -27,37 +27,24 @@ export function OverridePanel({
 
   // Canonical Dispute Resolution Actions per 02_BACKEND_SPEC.md §6 & 06_UI_UX_DESIGN.md §6.2
   if (currentState === 'DISPUTE_OPEN') {
-    if (hasFrozenCommitment) {
-      actions.push({
-        id: 'reject_dispute',
-        label: 'Reject dispute — resume commitment',
-        isDestructive: false,
-        badge: 'Unfreezes commitment',
-        consequence: 'The dispute will be rejected, unfreezing the active commitment (is_frozen = false) and preserving its original payment due date.',
-      });
-      actions.push({
-        id: 'uphold_dispute',
-        label: 'Uphold dispute — void commitment',
-        isDestructive: true,
-        badge: 'Voids commitment',
-        consequence: 'This will transition the commitment to VOIDED_BY_DISPUTE and reopen the case for dispute reconciliation or credit note issuance. This cannot be undone.',
-      });
-    } else {
-      actions.push({
-        id: 'reject_dispute',
-        label: 'Reject dispute — resume recovery outreach',
-        isDestructive: false,
-        badge: 'Resumes cadence',
-        consequence: 'The dispute will be rejected and standard autonomous recovery cadence will resume.',
-      });
-      actions.push({
-        id: 'uphold_dispute',
-        label: 'Uphold dispute — void invoice & close',
-        isDestructive: true,
-        badge: 'Closes dispute',
-        consequence: 'This will uphold the debtor dispute and transition the case for credit adjustment.',
-      });
-    }
+    actions.push({
+      id: 'reject_dispute',
+      label: 'Reject dispute — resume commitment',
+      isDestructive: false,
+      badge: 'Unfreezes commitment',
+      consequence: hasFrozenCommitment
+        ? 'The dispute will be rejected, unfreezing the active commitment (is_frozen = false) and resuming recovery toward the original payment due date.'
+        : 'The dispute will be rejected and standard autonomous recovery cadence will resume.',
+    });
+    actions.push({
+      id: 'uphold_dispute',
+      label: 'Uphold dispute — void commitment',
+      isDestructive: true,
+      badge: 'Voids commitment',
+      consequence: hasFrozenCommitment
+        ? 'The dispute will be upheld, voiding the disputed commitment (VOIDED_BY_DISPUTE) and returning the case for credit adjustment or open renegotiation.'
+        : 'The dispute will be upheld and the case will transition for credit adjustment.',
+    });
   } else if (
     currentState !== 'ESCALATED' &&
     currentState !== 'CLOSED_PAID' &&
