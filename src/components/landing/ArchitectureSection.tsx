@@ -82,20 +82,20 @@ export function ArchitectureSection() {
         },
         {
           num: '05',
-          title: 'Outcome / Handoff',
+          title: 'Payment Verification',
           status: 'Debt Extinguished',
           progress: '5/5',
           badge: 'VERIFY',
-          actor: 'Razorpay Webhook Callback',
+          actor: 'Razorpay Test Mode Webhook',
           stateDelta: 'COMMITMENT_ACTIVE ➔ CLOSED_PAID',
-          summaryText: 'Razorpay webhook confirms funds settlement. Commitment status advances to KEPT and case closes permanently.',
-          evidenceLeftTitle: 'Razorpay Webhook Callback',
-          evidenceLeft: '{\n  "event": "payment.captured",\n  "payment_id": "pay_N9xL019284",\n  "amount": 4200000,\n  "currency": "INR",\n  "status": "captured",\n  "signature_verified": true\n}',
-          evidenceRightTitle: 'Terminal State Closure & Audit Trail',
-          evidenceRight: 'UPDATE commitments\nSET status = \'KEPT\'\nWHERE id = \'com_912\';\n\nUPDATE recovery_cases\nSET state = \'CLOSED_PAID\'\nWHERE id = \'39fff352\';\n\n-- Append non-repudiable dual-timestamped audit\nINSERT INTO audit_events (case_id, event_type, sim_time, real_time)\nVALUES (\'39fff352\', \'case_resolved_paid\', \'2026-01-10 11:20\', NOW());',
-          policyRule: '>= 90% partial payment tolerance rule satisfies full debt close',
-          llmRole: 'None (Idempotent Webhook Match)',
-          table: 'payments & audit_events',
+          summaryText: 'Razorpay Test Mode webhook confirms payment. Server verifies raw HMAC-SHA256 signature, PaymentVerifier reconciles balance to ₹0, and case transitions to CLOSED_PAID.',
+          evidenceLeftTitle: 'Razorpay Webhook Payload (Raw HMAC Verified)',
+          evidenceLeft: '{\n  "event": "payment.captured",\n  "payment_id": "pay_RZP_TEST_9001",\n  "order_id": "order_RZP_101",\n  "amount": 4200000,\n  "currency": "INR",\n  "status": "captured",\n  "signature_verified": true\n}',
+          evidenceRightTitle: 'StateTransitionService Closure & Audit Event',
+          evidenceRight: 'UPDATE payments\nSET status = \'captured\'\nWHERE external_id = \'pay_RZP_TEST_9001\';\n\nUPDATE recovery_cases\nSET state = \'CLOSED_PAID\', closed_at = NOW()\nWHERE id = \'39fff352\';\n\n-- Append immutable dual-timestamped audit\nINSERT INTO audit_events (case_id, event_type, actor)\nVALUES (\'39fff352\', \'payment_verified_closed\', \'payment_verifier\');',
+          policyRule: 'Two-tier idempotency + HMAC-SHA256 signature verification satisfies full closure',
+          llmRole: 'None (Authoritative Webhook Match)',
+          table: 'payments, webhook_events & audit_events',
         },
       ],
     },
@@ -360,15 +360,21 @@ export function ArchitectureSection() {
               </div>
             </div>
 
-            {/* Node 4: Outcomes */}
-            <div className="p-4 rounded-xl bg-neutral-50 border border-neutral-200/80 relative">
-              <div className="text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-wider">04 · Verification</div>
-              <h4 className="text-xs font-bold text-neutral-900 mt-1">Bank Settlement / Dispute Hold</h4>
-              <p className="text-[11px] text-neutral-500 mt-1.5 leading-relaxed">
-                Razorpay webhooks verify settlement (`CLOSED_PAID`). Human reviewer enters only when policy requires.
+            {/* Node 4: Outcomes & Razorpay Verification */}
+            <div className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-200 relative">
+              <div className="flex items-center justify-between">
+                <div className="text-[10px] font-mono font-bold text-emerald-700 uppercase tracking-wider">04 · Payment Verification</div>
+                <span className="text-[9px] font-mono font-semibold text-emerald-800 bg-emerald-100/80 border border-emerald-200 px-1.5 py-0.5 rounded">
+                  TEST MODE
+                </span>
+              </div>
+              <h4 className="text-xs font-bold text-neutral-900 mt-1">Razorpay Test Mode Checkout</h4>
+              <p className="text-[11px] text-neutral-600 mt-1.5 leading-relaxed">
+                Outstanding cases can be paid through Razorpay Standard Checkout in Test Mode. Server webhooks verify HMAC-SHA256 signature and reconcile ledger to <code className="text-neutral-800 font-mono text-[10px]">CLOSED_PAID</code>.
               </p>
-              <div className="mt-3 pt-2 border-t border-neutral-200/60 text-[10px] font-mono text-green-700 font-semibold">
-                Outcome: Audit Trail Appended
+              <div className="mt-3 pt-2 border-t border-emerald-200/60 flex items-center justify-between text-[10px] font-mono">
+                <span className="text-emerald-800 font-semibold">Outcome: CLOSED_PAID + Audit</span>
+                <span className="text-neutral-500 text-[9.5px]">No real money charged</span>
               </div>
             </div>
           </div>
