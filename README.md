@@ -2,7 +2,21 @@
 
 ### P2P Recovery Agent for Explainable, Policy-Driven Invoice Recovery
 
-Recoup is an autonomous, policy-governed debt recovery platform built for B2B and SME merchants on Razorpay. It replaces blunt, scheduled email blasts with structured debtor commitment tracking, deterministic dispute freezing, and an immutable, dual-timestamped audit ledger.
+Recoup is an autonomous, policy-governed recovery platform for B2B and SME merchants on Razorpay. It replaces blunt, scheduled dunning with explainable recovery decisions, structured debtor commitment tracking, deterministic dispute handling, and an immutable, dual-timestamped audit ledger.
+
+**Live Demo:** https://recoup-sage.vercel.app/
+
+**Built for:** Razorpay AI Buildathon 2026 — Autonomous Receivables / P2P Recovery Agent Track
+
+## Why Recoup?
+
+Traditional recovery automation treats every debtor the same. Recoup instead separates AI-assisted understanding from deterministic financial decision-making.
+
+- **Explainable:** Every recovery action records a reason and decision trail.
+- **Policy-driven:** AI proposes; deterministic policy rules decide.
+- **Commitment-aware:** Payment promises become tracked commitments with monitored due dates.
+- **Dispute-safe:** Active commitments are frozen during disputes instead of being silently cancelled.
+- **Auditable:** State transitions and decisions are recorded in an append-only ledger.
 
 ---
 
