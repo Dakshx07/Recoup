@@ -42,6 +42,11 @@ export function HeroSection() {
           </a>
         </div>
 
+        {/* Live Evaluator Cue */}
+        <p className="text-[13px] text-neutral-500 mt-3 font-mono">
+          Live console includes interactive <span className="text-blue-700 font-bold">Razorpay Test Mode</span> checkout &amp; webhook verification
+        </p>
+
         {/* Credibility Metric Chips */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-4xl mx-auto mt-10 text-left">
           <div className="bg-white p-4 rounded-xl border border-neutral-200 shadow-2xs hover:border-neutral-300 transition-colors">
