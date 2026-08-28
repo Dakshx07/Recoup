@@ -22,17 +22,18 @@ export async function POST(request: NextRequest) {
 
     const supabase = getServerClient();
 
-    // Get current simulated clock state from latest audit event
+    // Get current simulated clock state from latest audit event within simulation horizon
     const { data: latestAudit } = await supabase
       .from('audit_events')
       .select('simulated_time')
+      .lte('simulated_time', '2026-04-01T00:00:00.000Z')
       .order('simulated_time', { ascending: false })
       .limit(1)
       .single();
 
     const currentDate = latestAudit?.simulated_time
       ? new Date(latestAudit.simulated_time)
-      : new Date('2026-01-01T09:00:00+05:30');
+      : new Date('2026-01-15T09:00:00+05:30');
 
     const clock = new SimulatedClock(currentDate);
     const stateTransition = new StateTransitionService(supabase, clock);
