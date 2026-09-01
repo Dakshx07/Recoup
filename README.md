@@ -189,7 +189,7 @@ Recoup is evaluated against a synthetic benchmark of **200 realistic enterprise 
 - **Database & Security**: PostgreSQL, Supabase, Row Level Security (RLS) default-deny policies, service-role server writes.
 - **Payments**: Razorpay Test Mode (`checkout.js`, Server Orders API, HMAC-SHA256 Webhooks).
 - **AI & Extraction**: Google Gemini 2.0 Flash via `@google/generative-ai` with strict Zod JSON schema validation.
-- **Testing & Verification**: Vitest (**232 automated tests** across 17 test files: Unit, Adversarial Red-Team, Razorpay Client, and Webhook Integration Flows), TypeScript strict mode (`tsc --noEmit`).
+- **Testing & Verification**: Vitest (**234 automated tests** across 17 test files: Unit, Adversarial Red-Team, Razorpay Client, and Webhook Integration Flows), TypeScript strict mode (`tsc --noEmit`).
 
 ---
 
@@ -254,7 +254,7 @@ Open [http://localhost:3000](http://localhost:3000) for the landing page or [htt
 
 ### 6. Run Automated Tests & Build Verification
 ```bash
-npm test            # Runs 232 automated tests via Vitest (100% pass)
+npm test            # Runs 234 automated tests via Vitest (100% pass)
 npm run typecheck   # Strict TypeScript static analysis (0 errors)
 npm run build       # Production bundle build check
 ```
@@ -298,7 +298,22 @@ Evaluators can test the end-to-end Razorpay Test Mode recovery flow directly in 
 
 ---
 
-## 11. License & Buildathon Context
+## 11. Product Roadmap & Future Horizons
+
+Recoup is designed with a modular domain core capable of scaling from an MVP into an enterprise-grade Receivables Operating System:
+
+- **Horizon 1 (Current · Verified Prototype):** Two-Tier State Machine, Deterministic Policy Engine, Dispute-Freeze Rules, Strict Zod LLM Parser, Supabase RLS, and Razorpay Test Mode Checkout.
+- **Horizon 2 (Omnichannel & Interactive Outreach):** WhatsApp Business Messaging, Production Email Ingestion, Conversational Voice Telephony, Debtor Self-Service Portal, and Governed Settlement Rules.
+- **Horizon 3 (Enterprise Financial OS & Integrations):** Two-Way ERP Sync (Tally, Zoho Books, QuickBooks, SAP), Merchant & Team Workspaces (RBAC), Recovery Economics & DSO Analytics, and Multi-Installment Governance.
+- **Horizon 4 (Advanced Capital Management):** Longer-term exploration of capital-management and receivables financing workflows subject to regulatory and platform constraints.
+
+👉 **Read the full strategic roadmap:** [**`ROADMAP.md`**](ROADMAP.md)
+
+---
+
+## 12. License & Buildathon Context
 
 Built for the **Razorpay AI Buildathon 2026** (*Autonomous Receivables / P2P Recovery Agent Track*).  
 Licensed under the [MIT License](LICENSE).
+
+
