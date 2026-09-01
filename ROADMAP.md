@@ -51,17 +51,9 @@ The current implementation focuses on architectural determinism, complete state 
 
 Expanding communication channels while routing every interaction into the **same verified control plane**:
 
-```mermaid
-flowchart TD
-    A[Inbound Debtor Message or Voice Call] --> B[Gemini 2.0 Structured Parsing]
-    B --> C[Deterministic Policy Engine]
-    C --> D[State Transition Service]
-    D --> E[Supabase PostgreSQL Persistence]
-    D --> F[Immutable Audit Ledger]
-    D --> G[Razorpay Payment Rails]
-    G --> H[Server Webhook Verification]
-    H --> D
-```
+<div align="center">
+  <img src="docs/assets/omnichannel-architecture.png" alt="Recoup Omnichannel Control Plane — Architecture for Horizon 2" width="100%" />
+</div>
 
 #### Planned Capabilities:
 1. **WhatsApp Business Messaging:** Automated dispatch of structured reminders with embedded Razorpay payment links and interactive response handling.

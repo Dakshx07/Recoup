@@ -44,19 +44,9 @@ Traditional recovery automation treats every overdue invoice similarly. Recoup s
 
 Recoup enforces a strict architectural boundary: **AI proposes &rarr; Schema validates &rarr; Policy Engine decides &rarr; State Transition Service mutates &rarr; Immutable Audit Ledger records.**
 
-```mermaid
-flowchart TD
-    A[Debtor Reply] --> B[Gemini 2.0 Flash]
-    B --> C[Zod Schema Validator]
-    C --> D[Deterministic Policy Engine]
-    D --> E[State Transition Service]
-    E --> F[Supabase PostgreSQL]
-    E --> G[Immutable Audit Ledger]
-
-    H[Razorpay Test Checkout] --> I[Server Webhook Verification]
-    I --> J[Payment Verifier]
-    J --> E
-```
+<div align="center">
+  <img src="docs/assets/core-architecture.png" alt="Recoup Control Plane — Architectural Data Flow" width="100%" />
+</div>
 
 ### Architectural Guarantees:
 - **Zero-Tool LLM**: The LLM acts strictly as a structured parser. It possesses zero tools, zero database credentials, and zero direct write privileges.
@@ -105,15 +95,9 @@ Immutable Audit Event
 
 The core financial safety mechanism of Recoup is the **Dispute-Freeze Rule** ([ADR 0006](docs/adr/0006-dispute-freeze-not-cancel-rule.md)):
 
-```mermaid
-flowchart TD
-    A[Valid Active Commitment] --> B[Frozen Dispute]
-    B --> C[Dispute Rejected - Commitment Resumed]
-    B --> D[Dispute Upheld - Commitment Voided]
-    A --> E[Closed Paid - Webhook Verified]
-    A --> F[Commitment Broken - Due Date Elapsed]
-    F --> G[Escalated - Day 14 Human Review]
-```
+<div align="center">
+  <img src="docs/assets/dispute-freeze-flow.png" alt="Recoup Dispute-Freeze State Flow (ADR 0006)" width="100%" />
+</div>
 
 1. When a debtor disputes an invoice that already has an active promise, the commitment is **frozen** (`is_frozen = true`, `status = VALID_ACTIVE`), never deleted or voided.
 2. The case transitions to `DISPUTE_OPEN` and automated outreach is placed on immediate hold.
