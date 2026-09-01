@@ -1,17 +1,35 @@
+<div align="center">
+
+<img src="public/logo.png" alt="Recoup Logo" width="80" height="80" />
+
 # Recoup
 
-### Autonomous P2P Invoice Recovery Platform with Policy Governance & Razorpay Test Mode Integration
+### AI Revenue Recovery Infrastructure for Razorpay Merchants
 
-Recoup is an explainable, policy-governed revenue recovery platform designed for B2B and SME merchants on Razorpay. It replaces blunt, scheduled dunning with structured debtor commitment tracking, deterministic dispute-freeze safety rules, an immutable dual-timestamped audit ledger, and a server-verified **Razorpay Test Mode** payment integration.
+**AI proposes · Policy decides · State machine enforces · Audit ledger proves**
 
-**Live Demo:** [https://recoup-sage.vercel.app/](https://recoup-sage.vercel.app/)  
-**Built for:** Razorpay AI Buildathon 2026 — *Autonomous Receivables / P2P Recovery Agent Track*
+<br />
+
+[![Razorpay Test Mode](https://img.shields.io/badge/Razorpay-Test%20Mode-blue?style=flat-square&logo=razorpay)](https://razorpay.com)
+[![Gemini 2.0 Flash](https://img.shields.io/badge/Gemini-2.0%20Flash-orange?style=flat-square&logo=google)](https://deepmind.google/technologies/gemini/)
+[![Tech Stack](https://img.shields.io/badge/Next.js%2016-TypeScript%20%7C%20PostgreSQL-black?style=flat-square&logo=next.js)](https://nextjs.org)
+[![Automated Tests](https://img.shields.io/badge/Tests-234%20Passing-success?style=flat-square)](https://vitest.dev)
+
+<br />
+
+Explainable, policy-governed revenue recovery for B2B and SME merchants — with bounded AI, dispute-safe automation, server-verified Razorpay Test Mode payments, and an immutable audit trail.
+
+<br />
+
+[Live Demo](https://recoup-sage.vercel.app/) · [GitHub](https://github.com/Dakshx07/Recoup) · [Security](docs/SECURITY.md) · [Roadmap](ROADMAP.md)
+
+</div>
 
 ---
 
 ## 1. Why Recoup?
 
-Traditional recovery automation treats every debtor the same. Recoup separates AI-assisted understanding from deterministic financial decision-making:
+Traditional recovery automation treats every overdue invoice similarly. Recoup separates AI-assisted understanding from deterministic financial authority:
 
 - **Explainable**: Every recovery action records a clear reason and causal decision trail.
 - **Policy-Driven**: AI proposes structured intents; deterministic policy rules decide.
