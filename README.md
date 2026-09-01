@@ -46,51 +46,45 @@ Recoup enforces a strict architectural boundary: **AI proposes &rarr; Schema val
 
 ```mermaid
 flowchart TD
-    subgraph Channel ["1. Inbound Ingestion"]
-        Inbound["Debtor Reply<br/>(Email / WhatsApp)"]
-        RazorpayCheckout["Razorpay Test Checkout<br/>(Standard Checkout.js)"]
+    subgraph Ingestion ["1. Inbound Ingestion"]
+        Inbound["Debtor Reply (Email / WhatsApp)"]
+        RazorpayCheckout["Razorpay Test Checkout (Standard Checkout.js)"]
     end
 
     subgraph LLM_Boundary ["2. Intelligence Layer (Zero-Tool Boundary)"]
-        Parser["Gemini 2.0 Flash<br/>(Structured Extraction)"]
-        Zod["Zod Schema Validator<br/>(Strict JSON Enforcement)"]
+        Parser["Gemini 2.0 Flash (Structured Extraction)"]
+        Zod["Zod Schema Validator (Strict JSON Enforcement)"]
     end
 
     subgraph Policy_Layer ["3. Authority Layer (Deterministic Policy Engine)"]
-        Policy["Policy Engine Rules<br/>• 13 Locked Constants<br/>• Dispute-Freeze Check<br/>• Quiet Hours & Frequency Caps"]
+        Policy["Policy Engine Rules (13 Locked Constants, Dispute Freeze, Quiet Hours)"]
     end
 
     subgraph Payment_Layer ["4. Financial Verification Layer"]
-        Webhook["Server Webhook Endpoint<br/>• Raw-Body HMAC-SHA256<br/>• Two-Tier Idempotency"]
-        Verifier["PaymentVerifier<br/>• Ledger Reconciliation"]
+        Webhook["Server Webhook Endpoint (Raw-Body HMAC-SHA256, Idempotency)"]
+        Verifier["PaymentVerifier (Ledger Reconciliation)"]
     end
 
     subgraph State_Layer ["5. Execution & State Transition Layer"]
-        Writer["State Transition Service<br/>• Legal Transition Validation<br/>• Optimistic Concurrency (409 Locking)<br/>• Atomic PostgreSQL Mutation"]
+        Writer["State Transition Service (Legal Transitions, 409 Optimistic Locking)"]
     end
 
     subgraph Storage ["6. Immutable Persistence Layer"]
-        DB[("Supabase PostgreSQL<br/>• recovery_cases (10 States)<br/>• commitments (8 Statuses)<br/>• RLS Default-Deny")]
-        Audit[("audit_events<br/>• Append-Only Ledger<br/>• Dual Timestamps (Simulated + Wall-Clock)")]
+        DB[("Supabase PostgreSQL (10 Case States, 8 Commitment Statuses, RLS)")]
+        Audit[("audit_events (Append-Only Ledger, Dual Timestamps)")]
     end
 
     Inbound --> Parser
     Parser --> Zod
-    Zod -->|"PROMISE_CANDIDATE / DISPUTE_CANDIDATE"| Policy
-    Policy -->|"Validated Legal Transition"| Writer
+    Zod -->|Candidate Promise or Dispute| Policy
+    Policy -->|Validated Legal Transition| Writer
 
-    RazorpayCheckout -.->|"Inbound Webhook Event"| Webhook
+    RazorpayCheckout -.->|Inbound Webhook Event| Webhook
     Webhook --> Verifier
-    Verifier -->|"Verified Payment Settlement"| Writer
+    Verifier -->|Verified Payment Settlement| Writer
 
     Writer --> DB
     Writer --> Audit
-
-    style LLM_Boundary fill:#fef3c7,stroke:#f59e0b,stroke-width:2px
-    style Policy_Layer fill:#dbeafe,stroke:#3b82f6,stroke-width:2px
-    style Payment_Layer fill:#dcfce7,stroke:#22c55e,stroke-width:2px
-    style State_Layer fill:#e0e7ff,stroke:#6366f1,stroke-width:2px
-    style Storage fill:#f1f5f9,stroke:#64748b,stroke-width:2px
 ```
 
 ### Architectural Guarantees:
@@ -143,24 +137,15 @@ The core financial safety mechanism of Recoup is the **Dispute-Freeze Rule** ([A
 ```mermaid
 stateDiagram-v2
     [*] --> VALID_ACTIVE: Valid Promise Registered
-
-    state VALID_ACTIVE {
-        [*] --> Monitoring: Active Due Date
-    }
-
-    VALID_ACTIVE --> FROZEN_DISPUTE: Debtor Raises Dispute
     
-    state FROZEN_DISPUTE {
-        [*] --> Held: is_frozen = true
-        Held --> PendingReview: Case state = DISPUTE_OPEN
-    }
-
-    FROZEN_DISPUTE --> VALID_ACTIVE: Reject Dispute (Unfreezes & Resumes Commitment)
-    FROZEN_DISPUTE --> VOIDED_BY_DISPUTE: Uphold Dispute (Voids Commitment & Reopens Case)
-
+    VALID_ACTIVE --> FROZEN_DISPUTE: Debtor Raises Dispute
     VALID_ACTIVE --> CLOSED_PAID: Webhook Verified Settlement
-    VALID_ACTIVE --> COMMITMENT_BROKEN: Due Date Elapsed (0 Payment)
-    COMMITMENT_BROKEN --> ESCALATED: Day 14 Trigger -> Human Review
+    VALID_ACTIVE --> COMMITMENT_BROKEN: Due Date Elapsed without Payment
+    
+    FROZEN_DISPUTE --> VALID_ACTIVE: Dispute Rejected (Commitment Resumed)
+    FROZEN_DISPUTE --> VOIDED_BY_DISPUTE: Dispute Upheld (Commitment Voided)
+    
+    COMMITMENT_BROKEN --> ESCALATED: Day 14 Trigger (Human Review)
 ```
 
 1. When a debtor disputes an invoice that already has an active promise, the commitment is **frozen** (`is_frozen = true`, `status = VALID_ACTIVE`), never deleted or voided.

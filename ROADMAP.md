@@ -53,23 +53,23 @@ Expanding communication channels while routing every interaction into the **same
 
 ```mermaid
 flowchart TD
-    subgraph Omnichannel_Ingestion ["Inbound & Outbound Channels (Planned)"]
-        Voice["🎙️ Conversational Voice Call"]
-        WhatsApp["📲 WhatsApp Business Messaging"]
-        Email["✉️ Production Email Ingestion"]
-        Portal["🌐 Debtor Self-Service Portal"]
+    subgraph Channels ["Inbound and Outbound Channels (Planned)"]
+        Voice["Conversational Voice Call"]
+        WhatsApp["WhatsApp Business Messaging"]
+        Email["Production Email Ingestion"]
+        Portal["Debtor Self-Service Portal"]
     end
 
-    subgraph Recoup_Control_Plane ["Existing Recoup Control Plane"]
-        Parser["1. Intent & Entity Extraction<br/>(Gemini 2.0 + Strict Zod Schema)"]
-        Policy["2. Deterministic Policy Engine<br/>(Quiet Hours, Caps, Dispute-Freeze)"]
-        State["3. State Transition Service<br/>(Atomic 409-Locked Mutations)"]
-        Audit["4. Immutable Audit Ledger<br/>(Dual-Timestamped History)"]
+    subgraph ControlPlane ["Existing Recoup Control Plane"]
+        Parser["1. Intent and Entity Extraction (Gemini 2.0 + Zod)"]
+        Policy["2. Deterministic Policy Engine (Caps, Dispute-Freeze)"]
+        State["3. State Transition Service (Atomic 409 Mutations)"]
+        Audit["4. Immutable Audit Ledger (Dual-Timestamp History)"]
     end
 
-    subgraph Payment_Fulfillment ["Payment & Settlement"]
-        Checkout["💳 Razorpay Payment Rails"]
-        Webhook["🛡️ Server-Side Webhook Verification"]
+    subgraph Payment ["Payment and Settlement"]
+        Checkout["Razorpay Payment Rails"]
+        Webhook["Server-Side Webhook Verification"]
     end
 
     Voice --> Parser
