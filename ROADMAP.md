@@ -53,36 +53,14 @@ Expanding communication channels while routing every interaction into the **same
 
 ```mermaid
 flowchart TD
-    subgraph Channels ["Inbound and Outbound Channels (Planned)"]
-        Voice["Conversational Voice Call"]
-        WhatsApp["WhatsApp Business Messaging"]
-        Email["Production Email Ingestion"]
-        Portal["Debtor Self-Service Portal"]
-    end
-
-    subgraph ControlPlane ["Existing Recoup Control Plane"]
-        Parser["1. Intent and Entity Extraction (Gemini 2.0 + Zod)"]
-        Policy["2. Deterministic Policy Engine (Caps, Dispute-Freeze)"]
-        State["3. State Transition Service (Atomic 409 Mutations)"]
-        Audit["4. Immutable Audit Ledger (Dual-Timestamp History)"]
-    end
-
-    subgraph Payment ["Payment and Settlement"]
-        Checkout["Razorpay Payment Rails"]
-        Webhook["Server-Side Webhook Verification"]
-    end
-
-    Voice --> Parser
-    WhatsApp --> Parser
-    Email --> Parser
-    Portal --> Parser
-
-    Parser --> Policy
-    Policy --> State
-    State --> Audit
-    State --> Checkout
-    Checkout --> Webhook
-    Webhook --> State
+    A[Inbound Debtor Message or Voice Call] --> B[Gemini 2.0 Structured Parsing]
+    B --> C[Deterministic Policy Engine]
+    C --> D[State Transition Service]
+    D --> E[Supabase PostgreSQL Persistence]
+    D --> F[Immutable Audit Ledger]
+    D --> G[Razorpay Payment Rails]
+    G --> H[Server Webhook Verification]
+    H --> D
 ```
 
 #### Planned Capabilities:

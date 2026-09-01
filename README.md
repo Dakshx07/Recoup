@@ -46,45 +46,16 @@ Recoup enforces a strict architectural boundary: **AI proposes &rarr; Schema val
 
 ```mermaid
 flowchart TD
-    subgraph Ingestion ["1. Inbound Ingestion"]
-        Inbound["Debtor Reply (Email / WhatsApp)"]
-        RazorpayCheckout["Razorpay Test Checkout (Standard Checkout.js)"]
-    end
+    A[Debtor Reply] --> B[Gemini 2.0 Flash]
+    B --> C[Zod Schema Validator]
+    C --> D[Deterministic Policy Engine]
+    D --> E[State Transition Service]
+    E --> F[Supabase PostgreSQL]
+    E --> G[Immutable Audit Ledger]
 
-    subgraph LLM_Boundary ["2. Intelligence Layer (Zero-Tool Boundary)"]
-        Parser["Gemini 2.0 Flash (Structured Extraction)"]
-        Zod["Zod Schema Validator (Strict JSON Enforcement)"]
-    end
-
-    subgraph Policy_Layer ["3. Authority Layer (Deterministic Policy Engine)"]
-        Policy["Policy Engine Rules (13 Locked Constants, Dispute Freeze, Quiet Hours)"]
-    end
-
-    subgraph Payment_Layer ["4. Financial Verification Layer"]
-        Webhook["Server Webhook Endpoint (Raw-Body HMAC-SHA256, Idempotency)"]
-        Verifier["PaymentVerifier (Ledger Reconciliation)"]
-    end
-
-    subgraph State_Layer ["5. Execution & State Transition Layer"]
-        Writer["State Transition Service (Legal Transitions, 409 Optimistic Locking)"]
-    end
-
-    subgraph Storage ["6. Immutable Persistence Layer"]
-        DB[("Supabase PostgreSQL (10 Case States, 8 Commitment Statuses, RLS)")]
-        Audit[("audit_events (Append-Only Ledger, Dual Timestamps)")]
-    end
-
-    Inbound --> Parser
-    Parser --> Zod
-    Zod -->|Candidate Promise or Dispute| Policy
-    Policy -->|Validated Legal Transition| Writer
-
-    RazorpayCheckout -.->|Inbound Webhook Event| Webhook
-    Webhook --> Verifier
-    Verifier -->|Verified Payment Settlement| Writer
-
-    Writer --> DB
-    Writer --> Audit
+    H[Razorpay Test Checkout] --> I[Server Webhook Verification]
+    I --> J[Payment Verifier]
+    J --> E
 ```
 
 ### Architectural Guarantees:
@@ -135,17 +106,13 @@ Immutable Audit Event
 The core financial safety mechanism of Recoup is the **Dispute-Freeze Rule** ([ADR 0006](docs/adr/0006-dispute-freeze-not-cancel-rule.md)):
 
 ```mermaid
-stateDiagram-v2
-    [*] --> VALID_ACTIVE: Valid Promise Registered
-    
-    VALID_ACTIVE --> FROZEN_DISPUTE: Debtor Raises Dispute
-    VALID_ACTIVE --> CLOSED_PAID: Webhook Verified Settlement
-    VALID_ACTIVE --> COMMITMENT_BROKEN: Due Date Elapsed without Payment
-    
-    FROZEN_DISPUTE --> VALID_ACTIVE: Dispute Rejected (Commitment Resumed)
-    FROZEN_DISPUTE --> VOIDED_BY_DISPUTE: Dispute Upheld (Commitment Voided)
-    
-    COMMITMENT_BROKEN --> ESCALATED: Day 14 Trigger (Human Review)
+flowchart TD
+    A[Valid Active Commitment] --> B[Frozen Dispute]
+    B --> C[Dispute Rejected - Commitment Resumed]
+    B --> D[Dispute Upheld - Commitment Voided]
+    A --> E[Closed Paid - Webhook Verified]
+    A --> F[Commitment Broken - Due Date Elapsed]
+    F --> G[Escalated - Day 14 Human Review]
 ```
 
 1. When a debtor disputes an invoice that already has an active promise, the commitment is **frozen** (`is_frozen = true`, `status = VALID_ACTIVE`), never deleted or voided.
