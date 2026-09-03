@@ -40,13 +40,13 @@ const COLOR_MAP = {
 function MetricCard({ label, value, subtext, color }: MetricCardProps) {
   const style = COLOR_MAP[color];
   return (
-    <div className={`bg-white rounded-lg border border-neutral-200 border-l-4 ${style.border} p-4`}>
-      <p className="text-xs text-neutral-500 font-medium">{label}</p>
+    <div className={`bg-white rounded-lg border border-neutral-200 border-l-4 ${style.border} p-4 hover:border-neutral-300 hover:shadow-2xs transition-all duration-150 motion-reduce:transition-none`}>
+      <p className="text-xs text-neutral-600 font-medium">{label}</p>
       <p className="text-2xl font-bold mt-1 tabular-nums text-neutral-900 tracking-tight">
         {value}
       </p>
       {subtext && (
-        <p className="text-xs text-neutral-400 mt-1 font-medium">{subtext}</p>
+        <p className="text-xs text-neutral-500 mt-1 font-medium">{subtext}</p>
       )}
     </div>
   );

@@ -29,15 +29,32 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user = null;
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    if (!error && data?.user) {
+      user = data.user;
+    } else if (error && (error.status === 400 || (error as any).code === 'refresh_token_not_found')) {
+      // Clear stale Supabase auth cookies so they don't spam 400 on subsequent requests
+      request.cookies.getAll().forEach((c) => {
+        if (c.name.startsWith('sb-')) {
+          supabaseResponse.cookies.delete(c.name);
+        }
+      });
+    }
+  } catch {
+    user = null;
+  }
 
   // Protect /app routes — redirect to /login if not authenticated
   if (request.nextUrl.pathname.startsWith('/app') && !user) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
-    return NextResponse.redirect(url);
+    const redirectResponse = NextResponse.redirect(url);
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie.name, cookie.value, cookie);
+    });
+    return redirectResponse;
   }
 
   // Redirect authenticated users away from /login
