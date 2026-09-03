@@ -40,22 +40,29 @@ export default function DashboardLayout({
   const [attentionCount, setAttentionCount] = useState(0);
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  const [supabase] = useState(() =>
+    createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
   );
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUserEmail(user?.email ?? null);
-    });
+    supabase.auth
+      .getUser()
+      .then(({ data: { user } }) => {
+        setUserEmail(user?.email ?? null);
+      })
+      .catch(() => {
+        setUserEmail(null);
+      });
 
     // Fetch attention count for badge
     fetch('/api/cases?tab=attention&limit=0')
       .then((r) => r.json())
       .then((d) => setAttentionCount(d.total ?? 0))
       .catch(() => { });
-  }, []);
+  }, [supabase]);
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -70,17 +77,27 @@ export default function DashboardLayout({
 
   return (
     <div className="flex h-screen overflow-hidden bg-neutral-50">
+      {/* Skip link for keyboard users */}
+      <a
+        href="#dashboard-main"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-3 focus:py-1.5 focus:bg-neutral-900 focus:text-white focus:rounded focus:text-xs focus:ring-2 focus:ring-blue-600 outline-none"
+      >
+        Skip to main content
+      </a>
+
       {/* Sidebar */}
       <aside
-        className={`flex flex-col border-r border-neutral-200 bg-white transition-all duration-200 ${collapsed ? 'w-16' : 'w-56'
-          }`}
+        aria-label="Main Sidebar"
+        className={`flex flex-col border-r border-neutral-200 bg-white transition-all duration-200 ${
+          collapsed ? 'w-16' : 'w-56'
+        }`}
       >
         {/* Logo + collapse toggle */}
         <div className="flex items-center justify-between px-4 h-14 border-b border-neutral-200">
           {!collapsed ? (
             <Link
               href="/"
-              className="flex items-center gap-2 group hover:opacity-85 transition-opacity"
+              className="flex items-center gap-2 group hover:opacity-85 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded p-1"
               title="Back to Landing Website"
             >
               <RecoupLogo size={24} className="w-6 h-6" />
@@ -91,7 +108,7 @@ export default function DashboardLayout({
           ) : (
             <Link
               href="/"
-              className="flex items-center justify-center w-full hover:opacity-85 transition-opacity"
+              className="flex items-center justify-center w-full hover:opacity-85 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded p-1"
               title="Back to Landing Website"
             >
               <RecoupLogo size={24} className="w-6 h-6" />
@@ -99,7 +116,7 @@ export default function DashboardLayout({
           )}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="p-1 rounded hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600 transition-colors"
+            className="p-1 rounded hover:bg-neutral-100 text-neutral-500 hover:text-neutral-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 cursor-pointer"
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {collapsed ? (
@@ -111,7 +128,7 @@ export default function DashboardLayout({
         </div>
 
         {/* Nav items */}
-        <nav className="flex-1 py-2 px-2 space-y-0.5 overflow-y-auto">
+        <nav aria-label="Dashboard Navigation" className="flex-1 py-2 px-2 space-y-0.5 overflow-y-auto">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
@@ -119,17 +136,20 @@ export default function DashboardLayout({
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={active ? 'page' : undefined}
                 className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium
-                            transition-colors group relative
-                            ${active
-                    ? 'bg-blue-50 text-blue-700'
-                    : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
-                  }`}
+                            transition-colors group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600
+                            ${
+                              active
+                                ? 'bg-blue-50 text-blue-700 font-semibold'
+                                : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
+                            }`}
                 title={collapsed ? item.label : undefined}
               >
                 <Icon
-                  className={`w-[18px] h-[18px] flex-shrink-0 ${active ? 'text-blue-600' : 'text-neutral-400 group-hover:text-neutral-600'
-                    }`}
+                  className={`w-[18px] h-[18px] flex-shrink-0 ${
+                    active ? 'text-blue-600' : 'text-neutral-500 group-hover:text-neutral-700'
+                  }`}
                 />
                 {!collapsed && (
                   <>
@@ -152,7 +172,7 @@ export default function DashboardLayout({
           <div className="!my-3 border-t border-neutral-200" />
           {!collapsed && (
             <div className="px-3 py-1">
-              <span className="text-[11px] font-medium uppercase tracking-wider text-neutral-400">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
                 Demo tools
               </span>
             </div>
@@ -165,17 +185,20 @@ export default function DashboardLayout({
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={active ? 'page' : undefined}
                 className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium
-                            transition-colors group
-                            ${active
-                    ? 'bg-blue-50 text-blue-700'
-                    : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
-                  }`}
+                            transition-colors group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600
+                            ${
+                              active
+                                ? 'bg-blue-50 text-blue-700 font-semibold'
+                                : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
+                            }`}
                 title={collapsed ? item.label : undefined}
               >
                 <Icon
-                  className={`w-[18px] h-[18px] flex-shrink-0 ${active ? 'text-blue-600' : 'text-neutral-400 group-hover:text-neutral-600'
-                    }`}
+                  className={`w-[18px] h-[18px] flex-shrink-0 ${
+                    active ? 'text-blue-600' : 'text-neutral-500 group-hover:text-neutral-700'
+                  }`}
                 />
                 {!collapsed && <span>{item.label}</span>}
               </Link>
@@ -186,8 +209,9 @@ export default function DashboardLayout({
         {/* User identity + logout */}
         <div className="border-t border-neutral-200 px-2 py-3">
           <div
-            className={`flex items-center gap-3 px-3 py-2 ${collapsed ? 'justify-center' : ''
-              }`}
+            className={`flex items-center gap-3 px-3 py-2 ${
+              collapsed ? 'justify-center' : ''
+            }`}
           >
             <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
               <span className="text-xs font-semibold text-blue-700">
@@ -199,13 +223,13 @@ export default function DashboardLayout({
                 <p className="text-sm font-medium text-neutral-800 truncate">
                   {userEmail ?? 'Reviewer'}
                 </p>
-                <p className="text-[11px] text-neutral-400">Reviewer</p>
+                <p className="text-[11px] text-neutral-500 font-medium">Reviewer</p>
               </div>
             )}
             {!collapsed && (
               <button
                 onClick={handleLogout}
-                className="p-1 rounded hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600 transition-colors"
+                className="p-1 rounded hover:bg-neutral-100 text-neutral-500 hover:text-neutral-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 cursor-pointer"
                 aria-label="Sign out"
                 title="Sign out"
               >
@@ -217,7 +241,7 @@ export default function DashboardLayout({
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-y-auto">
+      <main id="dashboard-main" tabIndex={-1} className="flex-1 overflow-y-auto outline-none">
         <div className="max-w-7xl mx-auto px-6 py-6">{children}</div>
       </main>
     </div>

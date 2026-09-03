@@ -122,23 +122,27 @@ export default async function CasesPage({
       />
 
       <div className="space-y-3.5">
-        <div className="flex items-center gap-6 border-b border-neutral-200">
+        <div role="tablist" aria-label="Case Queue filters" className="flex items-center gap-6 border-b border-neutral-200">
           <Link
             href="/app/cases?tab=attention"
-            className={`pb-2.5 text-sm font-medium transition-colors border-b-2 ${
+            role="tab"
+            aria-selected={tab === 'attention'}
+            className={`pb-2.5 text-sm font-medium transition-colors border-b-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded-t-xs ${
               tab === 'attention'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-neutral-500 hover:text-neutral-700'
+                ? 'border-blue-600 text-blue-600 font-semibold'
+                : 'border-transparent text-neutral-600 hover:text-neutral-900'
             }`}
           >
             Needs attention
           </Link>
           <Link
             href="/app/cases?tab=all"
-            className={`pb-2.5 text-sm font-medium transition-colors border-b-2 ${
+            role="tab"
+            aria-selected={tab === 'all'}
+            className={`pb-2.5 text-sm font-medium transition-colors border-b-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded-t-xs ${
               tab === 'all'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-neutral-500 hover:text-neutral-700'
+                ? 'border-blue-600 text-blue-600 font-semibold'
+                : 'border-transparent text-neutral-600 hover:text-neutral-900'
             }`}
           >
             All cases

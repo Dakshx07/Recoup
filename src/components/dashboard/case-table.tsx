@@ -69,13 +69,13 @@ export function CaseTable({ cases, isLoading, isEmpty, simulatedNow }: CaseTable
     <div className="bg-white rounded-lg border border-neutral-200 overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm whitespace-nowrap">
-          <thead className="bg-neutral-50 border-b border-neutral-200 text-neutral-500">
+          <thead className="bg-neutral-50 border-b border-neutral-200 text-neutral-600 font-semibold">
             <tr>
-              <th className="px-4 py-2.5 font-medium text-xs uppercase tracking-wider">Invoice & Debtor</th>
-              <th className="px-4 py-2.5 font-medium text-xs uppercase tracking-wider text-right">Outstanding</th>
-              <th className="px-4 py-2.5 font-medium text-xs uppercase tracking-wider">Status</th>
-              <th className="px-4 py-2.5 font-medium text-xs uppercase tracking-wider">Last Activity</th>
-              <th className="px-4 py-2.5 font-medium text-xs uppercase tracking-wider text-right">Action</th>
+              <th scope="col" className="px-4 py-2.5 text-xs uppercase tracking-wider">Invoice &amp; Debtor</th>
+              <th scope="col" className="px-4 py-2.5 text-xs uppercase tracking-wider text-right">Outstanding</th>
+              <th scope="col" className="px-4 py-2.5 text-xs uppercase tracking-wider">Status</th>
+              <th scope="col" className="px-4 py-2.5 text-xs uppercase tracking-wider">Last Activity</th>
+              <th scope="col" className="px-4 py-2.5 text-xs uppercase tracking-wider text-right">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100">
@@ -87,19 +87,19 @@ export function CaseTable({ cases, isLoading, isEmpty, simulatedNow }: CaseTable
               return (
                 <tr
                   key={row.id}
-                  className="group relative hover:bg-neutral-50/70 transition-colors"
+                  className="group relative hover:bg-neutral-50/80 transition-colors"
                 >
                   <td className="px-4 py-2.5">
                     {isEscalated && (
-                      <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-red-500" />
+                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500" />
                     )}
                     <Link
                       href={`/app/cases/${row.id}`}
-                      className="absolute inset-0 z-10"
-                      aria-label={`View case ${row.invoiceNumber}`}
+                      className="absolute inset-0 z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-inset rounded-xs"
+                      aria-label={`View case for invoice ${row.invoiceNumber} - ${row.debtorName}`}
                     />
                     <div className="flex flex-col">
-                      <span className="font-mono text-xs text-neutral-400">
+                      <span className="font-mono text-xs text-neutral-500 font-medium">
                         {row.invoiceNumber}
                       </span>
                       <span className="font-medium text-sm text-neutral-900 mt-0.5">

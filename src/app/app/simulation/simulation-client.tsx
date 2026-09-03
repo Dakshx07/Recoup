@@ -58,31 +58,31 @@ export function SimulationClient({
             <Clock className="w-5 h-5 text-blue-600" />
           </div>
           <div>
-            <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">
+            <p className="text-xs font-semibold text-neutral-600 uppercase tracking-wider">
               Authoritative Simulated Clock
             </p>
             <p className="text-lg font-bold text-neutral-900 font-mono mt-0.5">
               {formatSimulatedTime(simulatedTime)}
             </p>
-            <p className="text-xs text-neutral-400 font-mono">{simulatedTime}</p>
+            <p className="text-xs text-neutral-600 font-mono">{simulatedTime}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-4 text-xs font-mono bg-neutral-50 px-3.5 py-2 rounded-md border border-neutral-200">
           <div>
-            <span className="text-neutral-400">Invoices: </span>
+            <span className="text-neutral-600">Invoices: </span>
             <span className="font-semibold text-neutral-900">{totalInvoices}</span>
           </div>
           <div className="h-3 w-px bg-neutral-300" />
           <div>
-            <span className="text-neutral-400">Total Cases: </span>
+            <span className="text-neutral-600">Total Cases: </span>
             <span className="font-semibold text-neutral-900">{totalCases}</span>
           </div>
         </div>
       </div>
 
       {statusMessage && (
-        <div className="p-3 rounded-md bg-blue-50 border border-blue-200 text-xs text-blue-800 flex items-center gap-2">
+        <div aria-live="polite" className="p-3 rounded-md bg-blue-50 border border-blue-200 text-xs text-blue-800 flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 text-blue-600 flex-shrink-0" />
           <span>{statusMessage}</span>
         </div>
@@ -98,7 +98,7 @@ export function SimulationClient({
             </div>
             <div>
               <h2 className="text-sm font-semibold text-neutral-900">Advance Simulated Time</h2>
-              <p className="text-xs text-neutral-500">Triggers cron evaluations, promise due dates, and escalation checks.</p>
+              <p className="text-xs text-neutral-600">Triggers cron evaluations, promise due dates, and escalation checks.</p>
             </div>
           </div>
 
@@ -106,7 +106,8 @@ export function SimulationClient({
             <button
               onClick={() => handleAdvance(1)}
               disabled={loading}
-              className="py-2 px-3 rounded-md bg-neutral-900 hover:bg-black text-white text-xs font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+              aria-label="Advance simulated time by 1 day"
+              className="py-2 px-3 rounded-md bg-neutral-900 hover:bg-black text-white text-xs font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 cursor-pointer"
             >
               {activeDays === 1 ? (
                 <RefreshCw className="w-3 h-3 animate-spin" />
@@ -118,7 +119,8 @@ export function SimulationClient({
             <button
               onClick={() => handleAdvance(3)}
               disabled={loading}
-              className="py-2 px-3 rounded-md bg-neutral-900 hover:bg-black text-white text-xs font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+              aria-label="Advance simulated time by 3 days"
+              className="py-2 px-3 rounded-md bg-neutral-900 hover:bg-black text-white text-xs font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 cursor-pointer"
             >
               {activeDays === 3 ? (
                 <RefreshCw className="w-3 h-3 animate-spin" />
@@ -130,7 +132,8 @@ export function SimulationClient({
             <button
               onClick={() => handleAdvance(7)}
               disabled={loading}
-              className="py-2 px-3 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+              aria-label="Advance simulated time by 7 days"
+              className="py-2 px-3 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 cursor-pointer"
             >
               {activeDays === 7 ? (
                 <RefreshCw className="w-3 h-3 animate-spin" />
@@ -141,7 +144,7 @@ export function SimulationClient({
             </button>
           </div>
 
-          <p className="text-[11px] text-neutral-400">
+          <p className="text-[11px] text-neutral-600">
             Advances the authoritative clock and processes all intermediate state machine checks.
           </p>
         </div>
@@ -154,17 +157,17 @@ export function SimulationClient({
             </div>
             <div>
               <h2 className="text-sm font-semibold text-neutral-900">Synthetic Benchmark Dataset</h2>
-              <p className="text-xs text-neutral-500">200 realistic invoices across 8 evaluation scenarios.</p>
+              <p className="text-xs text-neutral-600">200 realistic invoices across 8 evaluation scenarios.</p>
             </div>
           </div>
 
-          <div className="p-3 bg-neutral-50 rounded-md border border-neutral-200 text-xs text-neutral-600 space-y-1">
+          <div className="p-3 bg-neutral-50 rounded-md border border-neutral-200 text-xs text-neutral-700 space-y-1">
             <p><strong>Clean separation:</strong> Scenario labels are strictly internal metadata.</p>
             <p><strong>Deterministic seed:</strong> Run <code className="bg-white px-1 py-0.5 rounded border border-neutral-200 font-mono text-[11px]">npm run generate-synthetic-data</code> to reseed.</p>
           </div>
 
           <div className="text-right">
-            <span className="text-[11px] text-neutral-400 font-mono">
+            <span className="text-[11px] text-neutral-600 font-mono">
               CLI / Webhook ready
             </span>
           </div>

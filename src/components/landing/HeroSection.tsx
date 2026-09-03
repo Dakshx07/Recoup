@@ -28,46 +28,46 @@ export function HeroSection() {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 mt-6">
           <Link
             href="/app"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-neutral-950 text-white text-xs sm:text-sm font-medium hover:bg-neutral-800 transition-all shadow-2xs hover:shadow active:scale-98 cursor-pointer"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-neutral-950 text-white text-xs sm:text-sm font-medium hover:bg-neutral-800 transition-all shadow-xs hover:shadow active:scale-98 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transform-none"
           >
             <span>Launch Operations Console</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
           <a
             href="#audit-trail"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white border border-neutral-200 text-neutral-700 text-xs sm:text-sm font-medium hover:bg-neutral-50 hover:text-neutral-900 transition-all shadow-2xs cursor-pointer"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white border border-neutral-200 text-neutral-700 text-xs sm:text-sm font-medium hover:bg-neutral-50 hover:text-neutral-900 transition-all shadow-xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
           >
             <span>Inspect Case Decision Trail</span>
-            <ChevronRight className="w-3.5 h-3.5 text-neutral-400" />
+            <ChevronRight className="w-3.5 h-3.5 text-neutral-500" />
           </a>
         </div>
 
         {/* Live Evaluator Cue */}
-        <p className="text-[13px] text-neutral-500 mt-3 font-mono">
-          Live console includes interactive <span className="text-blue-700 font-bold">Razorpay Test Mode</span> checkout &amp; webhook verification
+        <p className="text-[13px] text-neutral-600 mt-3 font-mono">
+          Live console includes interactive <span className="text-blue-700 font-semibold">Razorpay Test Mode</span> checkout &amp; webhook verification
         </p>
 
         {/* Credibility Metric Chips */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-4xl mx-auto mt-10 text-left">
-          <div className="bg-white p-4 rounded-xl border border-neutral-200 shadow-2xs hover:border-neutral-300 transition-colors">
-            <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider font-mono">Recovery Rate</p>
+          <div className="bg-white p-4 rounded-xl border border-neutral-200/90 shadow-xs hover:border-neutral-300 hover:-translate-y-0.5 transition-all duration-200 motion-reduce:transform-none">
+            <p className="text-[10px] font-semibold text-neutral-600 uppercase tracking-wider font-mono">Recovery Rate</p>
             <p className="text-xl sm:text-2xl font-bold text-neutral-950 font-mono mt-0.5">40.12%</p>
             <p className="text-[11px] text-green-700 font-medium mt-0.5">₹50.06L in 200-case simulation</p>
           </div>
-          <div className="bg-white p-4 rounded-xl border border-neutral-200 shadow-2xs hover:border-neutral-300 transition-colors">
-            <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider font-mono">Dispute Accuracy</p>
+          <div className="bg-white p-4 rounded-xl border border-neutral-200/90 shadow-xs hover:border-neutral-300 hover:-translate-y-0.5 transition-all duration-200 motion-reduce:transform-none">
+            <p className="text-[10px] font-semibold text-neutral-600 uppercase tracking-wider font-mono">Dispute Accuracy</p>
             <p className="text-xl sm:text-2xl font-bold text-neutral-950 font-mono mt-0.5">100.0%</p>
             <p className="text-[11px] text-blue-700 font-medium mt-0.5">Deterministic freeze rule</p>
           </div>
-          <div className="bg-white p-4 rounded-xl border border-neutral-200 shadow-2xs hover:border-neutral-300 transition-colors">
-            <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider font-mono">Model Permission</p>
+          <div className="bg-white p-4 rounded-xl border border-neutral-200/90 shadow-xs hover:border-neutral-300 hover:-translate-y-0.5 transition-all duration-200 motion-reduce:transform-none">
+            <p className="text-[10px] font-semibold text-neutral-600 uppercase tracking-wider font-mono">Model Permission</p>
             <p className="text-xl sm:text-2xl font-bold text-neutral-950 font-mono mt-0.5">0 Tools</p>
-            <p className="text-[11px] text-neutral-600 font-medium mt-0.5">Zero DB write access</p>
+            <p className="text-[11px] text-neutral-700 font-medium mt-0.5">Zero DB write access</p>
           </div>
-          <div className="bg-white p-4 rounded-xl border border-neutral-200 shadow-2xs hover:border-neutral-300 transition-colors">
-            <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider font-mono">Ledger Type</p>
+          <div className="bg-white p-4 rounded-xl border border-neutral-200/90 shadow-xs hover:border-neutral-300 hover:-translate-y-0.5 transition-all duration-200 motion-reduce:transform-none">
+            <p className="text-[10px] font-semibold text-neutral-600 uppercase tracking-wider font-mono">Ledger Type</p>
             <p className="text-xl sm:text-2xl font-bold text-neutral-950 font-mono mt-0.5">Append-Only</p>
-            <p className="text-[11px] text-neutral-600 font-medium mt-0.5">Dual-timestamped audit</p>
+            <p className="text-[11px] text-neutral-700 font-medium mt-0.5">Dual-timestamped audit</p>
           </div>
         </div>
       </div>
