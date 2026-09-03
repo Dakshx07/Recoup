@@ -43,13 +43,13 @@ export function Navbar({ scrolled: externalScrolled }: NavbarProps = {}) {
             </span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-6 text-xs font-medium text-neutral-600">
-            <a href="#problem" className="hover:text-neutral-900 transition-colors">The Problem</a>
-            <a href="#how-it-works" className="hover:text-neutral-900 transition-colors">How It Works</a>
-            <a href="#ai-boundary" className="hover:text-neutral-900 transition-colors">AI Boundary</a>
-            <a href="#guardrails" className="hover:text-neutral-900 transition-colors">Guardrails</a>
-            <a href="#audit-trail" className="hover:text-neutral-900 transition-colors">Audit Ledger</a>
-            <a href="#evaluation" className="hover:text-neutral-900 transition-colors">Benchmark</a>
+          <nav aria-label="Main Navigation" className="hidden md:flex items-center gap-6 text-xs font-medium text-neutral-600">
+            <a href="#problem" className="hover:text-neutral-900 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 rounded-xs">The Problem</a>
+            <a href="#how-it-works" className="hover:text-neutral-900 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 rounded-xs">How It Works</a>
+            <a href="#ai-boundary" className="hover:text-neutral-900 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 rounded-xs">AI Boundary</a>
+            <a href="#guardrails" className="hover:text-neutral-900 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 rounded-xs">Guardrails</a>
+            <a href="#audit-trail" className="hover:text-neutral-900 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 rounded-xs">Audit Ledger</a>
+            <a href="#evaluation" className="hover:text-neutral-900 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 rounded-xs">Benchmark</a>
           </nav>
         </div>
 
@@ -58,14 +58,14 @@ export function Navbar({ scrolled: externalScrolled }: NavbarProps = {}) {
             href="https://github.com/Dakshx07/Recoup"
             target="_blank"
             rel="noreferrer"
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 transition-colors"
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
           >
             <Code2 className="w-3.5 h-3.5" />
             <span>Specs & ADRs</span>
           </a>
           <Link
             href="/app"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-neutral-900 text-white text-xs font-semibold hover:bg-black transition-all shadow-sm hover:shadow active:scale-95 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-neutral-900 text-white text-xs font-semibold hover:bg-black transition-all shadow-xs hover:shadow active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transform-none"
           >
             <span>Explore Live Dashboard</span>
             <ArrowRight className="w-3.5 h-3.5" />

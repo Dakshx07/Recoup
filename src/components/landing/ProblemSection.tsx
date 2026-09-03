@@ -2,17 +2,17 @@ import { AlertTriangle } from 'lucide-react';
 
 export function ProblemSection() {
   return (
-    <section id="problem" className="py-20 md:py-28 bg-white border-b border-neutral-200">
+    <section id="problem" aria-labelledby="problem-heading" className="py-20 md:py-28 bg-white border-b border-neutral-200">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto">
-          <p className="text-xs font-semibold uppercase tracking-widest text-neutral-400 font-mono">
+          <p className="text-xs font-semibold uppercase tracking-widest text-neutral-600 font-mono">
             The Industry Blindspot
           </p>
-          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-[3.25rem] font-normal text-neutral-950 mt-3 tracking-[-0.015em] leading-[1.08]">
+          <h2 id="problem-heading" className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-[3.25rem] font-normal text-neutral-950 mt-3 tracking-[-0.015em] leading-[1.08]">
             Reminders get sent. Promises get made. <br />
             <span className="text-neutral-600 font-serif">Nobody tracks which ones get kept.</span>
           </h2>
-          <p className="text-xs sm:text-sm md:text-sm text-neutral-500 mt-4 leading-relaxed max-w-xl mx-auto">
+          <p className="text-xs sm:text-sm md:text-sm text-neutral-600 mt-4 leading-relaxed max-w-xl mx-auto">
             Legacy dunning tools operate on blind email cadences. When a debtor replies with a commitment date or flags a dispute, traditional automation fails silently.
           </p>
         </div>
@@ -20,7 +20,7 @@ export function ProblemSection() {
         {/* 3 Visual Failure Scenario Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 text-left mt-14">
           {/* Scenario 1 */}
-          <div className="flex flex-col justify-between p-6 rounded-2xl border border-neutral-200 bg-neutral-50/50 hover:bg-white hover:border-neutral-300 hover:shadow-xs transition-all">
+          <div className="flex flex-col justify-between p-6 rounded-2xl border border-neutral-200 bg-neutral-50/50 hover:bg-white hover:border-neutral-300 hover:shadow-xs hover:-translate-y-0.5 transition-all duration-200 motion-reduce:transform-none">
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -31,19 +31,19 @@ export function ProblemSection() {
                     Blind Cadence
                   </span>
                 </div>
-                <span className="text-[11px] text-neutral-400 font-mono">Timer-Driven</span>
+                <span className="text-[11px] text-neutral-600 font-mono">Timer-Driven</span>
               </div>
 
               <h3 className="text-base font-bold text-neutral-900">The Broadcast Black Hole</h3>
-              <p className="text-xs text-neutral-500 mt-1.5 leading-relaxed">
+              <p className="text-xs text-neutral-600 mt-1.5 leading-relaxed">
                 Legacy systems fire automated emails every 3 days. They cannot parse reply intent or verify settlement claims.
               </p>
 
               {/* Micro UI: Failed Sequence */}
               <div className="mt-5 space-y-2 bg-white p-3 rounded-xl border border-neutral-200/80 font-mono text-[11px]">
-                <div className="flex items-center justify-between pb-1.5 border-b border-neutral-100 text-neutral-500">
+                <div className="flex items-center justify-between pb-1.5 border-b border-neutral-100 text-neutral-600">
                   <span>Day 01 · Automated Notice</span>
-                  <span className="text-[10px] text-neutral-400">Sent</span>
+                  <span className="text-[10px] text-neutral-500 font-medium">Sent</span>
                 </div>
                 <div className="p-2 rounded bg-neutral-50 text-neutral-700 font-sans text-xs">
                   <span className="font-semibold text-neutral-900">Debtor:</span> &ldquo;Checking invoice with accounts...&rdquo;
@@ -55,14 +55,14 @@ export function ProblemSection() {
               </div>
             </div>
 
-            <div className="mt-5 pt-3 border-t border-neutral-200/60 flex items-center justify-between text-[11px] text-neutral-500">
+            <div className="mt-5 pt-3 border-t border-neutral-200/60 flex items-center justify-between text-[11px] text-neutral-600">
               <span>Result:</span>
               <span className="font-medium text-red-600 font-mono">Spam flag · Zero attribution</span>
             </div>
           </div>
 
           {/* Scenario 2 */}
-          <div className="flex flex-col justify-between p-6 rounded-2xl border border-neutral-200 bg-neutral-50/50 hover:bg-white hover:border-neutral-300 hover:shadow-xs transition-all">
+          <div className="flex flex-col justify-between p-6 rounded-2xl border border-neutral-200 bg-neutral-50/50 hover:bg-white hover:border-neutral-300 hover:shadow-xs hover:-translate-y-0.5 transition-all duration-200 motion-reduce:transform-none">
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -73,11 +73,11 @@ export function ProblemSection() {
                     Context Loss
                   </span>
                 </div>
-                <span className="text-[11px] text-neutral-400 font-mono">No State Store</span>
+                <span className="text-[11px] text-neutral-600 font-mono">No State Store</span>
               </div>
 
               <h3 className="text-base font-bold text-neutral-900">Commitment Amnesia</h3>
-              <p className="text-xs text-neutral-500 mt-1.5 leading-relaxed">
+              <p className="text-xs text-neutral-600 mt-1.5 leading-relaxed">
                 Debtors promise to pay on a specific date. Without an active commitment ledger, legacy bots keep nagging beforehand.
               </p>
 
@@ -100,14 +100,14 @@ export function ProblemSection() {
               </div>
             </div>
 
-            <div className="mt-5 pt-3 border-t border-neutral-200/60 flex items-center justify-between text-[11px] text-neutral-500">
+            <div className="mt-5 pt-3 border-t border-neutral-200/60 flex items-center justify-between text-[11px] text-neutral-600">
               <span>Result:</span>
               <span className="font-medium text-amber-700 font-mono">Customer goodwill destroyed</span>
             </div>
           </div>
 
           {/* Scenario 3 */}
-          <div className="flex flex-col justify-between p-6 rounded-2xl border border-neutral-200 bg-neutral-50/50 hover:bg-white hover:border-neutral-300 hover:shadow-xs transition-all">
+          <div className="flex flex-col justify-between p-6 rounded-2xl border border-neutral-200 bg-neutral-50/50 hover:bg-white hover:border-neutral-300 hover:shadow-xs hover:-translate-y-0.5 transition-all duration-200 motion-reduce:transform-none">
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -118,11 +118,11 @@ export function ProblemSection() {
                     Dispute Void
                   </span>
                 </div>
-                <span className="text-[11px] text-neutral-400 font-mono">Binary Rules</span>
+                <span className="text-[11px] text-neutral-600 font-mono">Binary Rules</span>
               </div>
 
               <h3 className="text-base font-bold text-neutral-900">False-Escalation Waves</h3>
-              <p className="text-xs text-neutral-500 mt-1.5 leading-relaxed">
+              <p className="text-xs text-neutral-600 mt-1.5 leading-relaxed">
                 Legitimate line-item disputes get escalated straight to collections handoffs because simple rules can&apos;t freeze a case.
               </p>
 
@@ -142,7 +142,7 @@ export function ProblemSection() {
               </div>
             </div>
 
-            <div className="mt-5 pt-3 border-t border-neutral-200/60 flex items-center justify-between text-[11px] text-neutral-500">
+            <div className="mt-5 pt-3 border-t border-neutral-200/60 flex items-center justify-between text-[11px] text-neutral-600">
               <span>Result:</span>
               <span className="font-medium text-neutral-800 font-mono">Merchant churn & legal cost</span>
             </div>
